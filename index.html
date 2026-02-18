@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Al-Qasim PC Interface</title>
+    <meta name="description" content="واجهة إدارة مركزية لمجموعة الكشافة — مستندات، مقاطع، روابط مفيدة">
+
+    <link rel="icon" href="ico.png" type="image/png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Modular Styles -->
+    <link rel="stylesheet" href="css/base.css?v=6.1">
+    <link rel="stylesheet" href="css/layout.css?v=6.1">
+    <link rel="stylesheet" href="css/components.css?v=6.1">
+    <link rel="stylesheet" href="css/utilities.css?v=6.1">
+    <link rel="stylesheet" href="css/calendar.css?v=6.1">
+    <link rel="stylesheet" href="css/media.css?v=6.1">
+    <link rel="stylesheet" href="css/docs.css?v=6.1">
+</head>
+
+<body>
+    <!-- Global Decorations -->
+
+    <!-- Global Decorations -->
+    <div class="islamic-decoration decoration-tr"></div>
+    <div class="islamic-decoration decoration-bl"></div>
+
+    <div class="app">
+        <!-- Sidebar Mobile Overlay -->
+        <div id="sidebar-overlay" class="sidebar-overlay"></div>
+
+        <!-- ===== Sidebar ===== -->
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                <div class="logo-icon">
+                    <img src="ico.png" alt="Logo" style="width:100%;height:100%;object-fit:contain;">
+                </div>
+                <h2>
+                    Al-Qasim PC Interface
+                    <small>إدارة المهام والأنشطة الكشفية</small>
+                </h2>
+            </div>
+
+            <nav class="sidebar-nav">
+                <a class="nav-item active" data-page="dashboard">
+                    <i class="fas fa-th-large"></i>
+                    <span>الرئيسية</span>
+                </a>
+                <a class="nav-item" data-page="documents">
+                    <i class="fas fa-folder-open"></i>
+                    <span>المستندات</span>
+                </a>
+                <a class="nav-item" data-page="media">
+                    <i class="fas fa-play-circle"></i>
+                    <span>المقاطع والمرئيات</span>
+                </a>
+                <a class="nav-item" data-page="reports">
+                    <i class="fas fa-file-pdf"></i>
+                    <span>التقارير</span>
+                </a>
+                <a class="nav-item" data-page="students">
+                    <i class="fas fa-users"></i>
+                    <span>الطلاب</span>
+                </a>
+                <a class="nav-item" data-page="links">
+                    <i class="fas fa-compass"></i>
+                    <span>روابط تهمنا</span>
+                </a>
+                <a class="nav-item" data-page="calendar">
+                    <i class="fas fa-calendar-alt"></i>
+                    <span>التقويم</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-tasks-container">
+                <!-- Tasks will be injected here by tasks.js -->
+            </div>
+        </aside>
+
+        <!-- ===== Main Content Area ===== -->
+        <main class="main">
+            <header class="app-header">
+                <div class="header-left">
+                    <div class="header-logo">
+                        <img src="ico.png" alt="Scouts Logo" style="width: 40px; height: 40px;">
+                    </div>
+                </div>
+
+                <div class="header-search">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="global-search" placeholder="ابحث عن ملفات، فديوهات، طلاب...">
+                    <div id="search-results" class="search-results-floating"></div>
+                </div>
+
+                <div class="header-right">
+                    <div id="header-weather" class="header-weather">
+                        <!-- Weather injected by weather.js -->
+                    </div>
+                    <div class="header-divider"></div>
+                    <div id="header-clock" class="header-clock">
+                        <span class="time">--:--:--</span>
+                        <span class="date">-- --- ----</span>
+                    </div>
+                </div>
+
+            </header>
+
+            <!-- Page Specific Content -->
+            <div id="page-content">
+                <div class="loading-state">
+                    <div class="spinner"></div>
+                    <p>جاري تحميل البيانات...</p>
+                </div>
+            </div>
+        </main>
+
+        <!-- Mobile Bottom Nav - Exact Mockup Mapping -->
+        <nav class="mobile-bottom-nav">
+            <a class="nav-item active" data-page="dashboard">
+                <i class="fas fa-home"></i>
+                <span>الرئيسية</span>
+            </a>
+            <a class="nav-item" data-page="documents">
+                <i class="fas fa-folder"></i>
+                <span>الملفات</span>
+            </a>
+
+            <div class="nav-add-btn" id="nav-center-btn" data-page="calendar">
+                <i class="fas fa-calendar-alt"></i>
+            </div>
+
+            <a class="nav-item" data-page="media">
+                <i class="fas fa-play-circle"></i>
+                <span>المرئيات</span>
+            </a>
+            <a class="nav-item" data-page="students">
+                <i class="fas fa-users"></i>
+                <span>الطلاب</span>
+            </a>
+        </nav>
+    </div>
+
+    <!-- Entrance Animation Logic (Native to Body) -->
+    <style>
+        .animate-fade {
+            animation: fadeIn 0.4s ease forwards;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+    </style>
+
+    <!-- OneSignal SDK for Professional Push -->
+    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+    <script>
+        window.OneSignalDeferred = window.OneSignalDeferred || [];
+        window.OneSignalDeferred.push(async function (OneSignal) {
+            await OneSignal.init({
+                appId: "1522b2a7-17d1-4a7a-a84d-2dc1165cd88b", // تم تحديثه بمعرفك الخاص
+                safari_web_id: "optional_safari_id",
+                notifyButton: {
+                    enable: true,
+                },
+            });
+        });
+    </script>
+
+    <!-- App Entry Module -->
+    <script type="module" src="js/app.js"></script>
+</body>
+
+</html>

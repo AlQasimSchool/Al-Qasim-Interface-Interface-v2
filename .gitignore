@@ -1,0 +1,14 @@
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Gemini/Antigravity generated files
+.gemini/
+brain/
+*.webp
+*.png
+*.jpg
+*.log
+task.md
+walkthrough.md
+implementation_plan*.md

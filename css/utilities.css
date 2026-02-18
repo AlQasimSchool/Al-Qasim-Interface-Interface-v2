@@ -1,0 +1,91 @@
+/* Global Animations and Utility Classes */
+
+@keyframes fadeUp {
+    from {
+        opacity: 0;
+        transform: translateY(18px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+.animate-in {
+    animation: fadeUp 0.5s cubic-bezier(.4, 0, .2, 1) forwards;
+}
+
+.animate-fade {
+    animation: fadeIn 0.4s ease forwards;
+}
+
+.stagger-1 {
+    animation-delay: 0.05s;
+}
+
+.stagger-2 {
+    animation-delay: 0.1s;
+}
+
+.stagger-3 {
+    animation-delay: 0.15s;
+}
+
+.stagger-4 {
+    animation-delay: 0.2s;
+}
+
+.stagger-5 {
+    animation-delay: 0.25s;
+}
+
+.stagger-6 {
+    animation-delay: 0.3s;
+}
+
+/* Islamic Patterns */
+.islamic-decoration {
+    display: block !important;
+    position: fixed;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.12;
+    width: 450px;
+    height: 450px;
+    background-image: url('../islamic_pattern.png');
+    background-size: cover;
+    background-repeat: no-repeat;
+    filter: sepia(0.3) contrast(1.1) brightness(0.9);
+    mask-image: radial-gradient(circle, black, transparent 70%);
+    -webkit-mask-image: radial-gradient(circle, black, transparent 70%);
+}
+
+.decoration-bl {
+    bottom: -150px;
+    left: -150px;
+    width: 650px;
+    height: 650px;
+}
+
+.decoration-tr {
+    top: -150px;
+    right: -150px;
+    width: 650px;
+    height: 650px;
+    transform: rotate(180deg);
+}
+
+body[data-page="dashboard"] .islamic-decoration {
+    display: block;
+}
