@@ -539,6 +539,7 @@
     color: var(--primary-green);
     font-size: 0.75rem;
     font-weight: 700;
+    font-family: 'Cairo', sans-serif;
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -887,17 +888,20 @@
 .task-input-group .btns button,
 .card-input-group .btns button {
     flex: 1;
-    min-width: 100px;
+    min-width: 80px;
+    height: 40px;
+    /* Equalized height */
     background: var(--white);
-    border-radius: 12px;
-    padding: 12px 10px;
+    border-radius: 10px;
+    padding: 0 12px;
     cursor: pointer;
-    font-size: 0.88rem;
+    font-size: 0.8rem;
     font-weight: 700;
+    font-family: inherit;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 14px;
+    gap: 10px;
     transition: all 0.3s ease;
     color: var(--text-primary);
     border: 1.5px solid var(--border-light);
@@ -907,12 +911,12 @@
 
 .task-input-group .btns button i,
 .card-input-group .btns button i {
-    font-size: 1.1rem;
+    font-size: 0.95rem;
     color: var(--primary-green);
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 20px;
+    width: 18px;
 }
 
 .task-input-group .btns button:hover,
@@ -930,13 +934,13 @@
 }
 
 .btn-toggle-schedule {
-    width: 50px !important;
-    min-width: 50px !important;
-    height: 50px !important;
+    width: 40px !important;
+    min-width: 40px !important;
+    height: 40px !important;
     flex: 0 !important;
     background: var(--white) !important;
     border: 1.5px solid var(--border-light) !important;
-    border-radius: 12px !important;
+    border-radius: 10px !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
@@ -946,7 +950,7 @@
 }
 
 .btn-toggle-schedule i {
-    font-size: 1.1rem !important;
+    font-size: 1rem !important;
     color: var(--primary-green) !important;
 }
 
