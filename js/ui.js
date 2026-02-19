@@ -119,7 +119,6 @@ export const templates = {
                                 <button id="add-dash-note" title="إضافة ملاحظة"><i class="fas fa-sticky-note"></i> ملاحظة</button>
                                 <button id="add-dash-task" title="إضافة مهمة"><i class="fas fa-plus"></i> مهمة</button>
                                 <button id="toggle-dash-schedule" class="btn-toggle-schedule" title="جدولة التذكير"><i class="fas fa-calendar-alt"></i></button>
-                                <button onclick="window.testNotification()" class="btn-toggle-schedule" title="اختبار الإشعارات"><i class="fas fa-bell"></i></button>
                             </div>
                         </div>
                     </div>

@@ -159,21 +159,6 @@
         }
     </style>
 
-    <!-- OneSignal SDK for Professional Push -->
-    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
-    <script>
-        window.OneSignalDeferred = window.OneSignalDeferred || [];
-        window.OneSignalDeferred.push(async function (OneSignal) {
-            await OneSignal.init({
-                appId: "1522b2a7-17d1-4a7a-a84d-2dc1165cd88b", // تم تحديثه بمعرفك الخاص
-                safari_web_id: "optional_safari_id",
-                notifyButton: {
-                    enable: true,
-                },
-            });
-        });
-    </script>
-
     <!-- App Entry Module -->
     <script type="module" src="js/app.js"></script>
 </body>
