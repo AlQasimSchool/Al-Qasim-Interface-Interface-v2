@@ -76,9 +76,9 @@ function openDatePicker() {
 
 function init() {
     // التحقق من الجلسة السابقة
-    const session = localStorage.getItem('admin_session');
-    const rememberedEmail = localStorage.getItem('remembered_email');
-    const rememberedId = localStorage.getItem('remembered_id');
+    const session = window.safeStorage.getItem('admin_session');
+    const rememberedEmail = window.safeStorage.getItem('remembered_email');
+    const rememberedId = window.safeStorage.getItem('remembered_id');
 
     if (session) {
         currentUser = JSON.parse(session);
@@ -90,7 +90,7 @@ function init() {
         _supabase.from('admins').select('*').eq('email', currentUser.email).single().then(({data}) => {
             if(data) {
                 currentUser = data;
-                localStorage.setItem('admin_session', JSON.stringify(data));
+                window.safeStorage.setItem('admin_session', JSON.stringify(data));
                 updateGreeting();
             }
         });
@@ -121,7 +121,7 @@ function init() {
     startLiveClock();
     
     // تهيئة إعدادات وقت نهاية التحضير
-    const savedEndTime = localStorage.getItem('scout-pulse-end-time') || "10:30";
+    const savedEndTime = window.safeStorage.getItem('scout-pulse-end-time') || "10:30";
     const endTimeInput = document.getElementById('setting-end-time');
     if (endTimeInput) endTimeInput.value = savedEndTime;
 
@@ -145,14 +145,14 @@ function init() {
         theme: "dark",
         locale: "ar",
         disableMobile: true, // يمنع ظهور النافذة البيضاء في الجوال والمتصفحات
-        defaultDate: localStorage.getItem('scout-pulse-end-time') || "10:30",
+        defaultDate: window.safeStorage.getItem('scout-pulse-end-time') || "10:30",
         onChange: function(selectedDates, dateStr) {
             updateAttendanceSettings(dateStr);
         }
     });
 
     // تهيئة القفل بالبصمة إذا كان مفعلاً
-    const isBiometricEnabled = localStorage.getItem('scout-pulse-biometric-enabled') === 'true';
+    const isBiometricEnabled = window.safeStorage.getItem('scout-pulse-biometric-enabled') === 'true';
     if (isBiometricEnabled && currentUser) {
         document.getElementById('biometricOverlay').classList.remove('hidden');
         const bioToggle = document.getElementById('setting-biometric');
@@ -214,8 +214,8 @@ async function handleAutoScan(id) {
 }
 
 function applySettings() {
-    const isSound = localStorage.getItem('scout-pulse-sound') !== 'false';
-    const isDark = localStorage.getItem('scout-pulse-dark') !== 'false';
+    const isSound = window.safeStorage.getItem('scout-pulse-sound') !== 'false';
+    const isDark = window.safeStorage.getItem('scout-pulse-dark') !== 'false';
     
     document.getElementById('setting-sound').checked = isSound;
     document.getElementById('setting-dark').checked = isDark;
@@ -855,7 +855,7 @@ async function startProgramming(scoutId) {
         
         document.getElementById('writeStatus').classList.add('hidden');
         document.getElementById('writeSuccess').classList.remove('hidden');
-        if(localStorage.getItem('scout-pulse-sound') !== 'false') playBeep();
+        if(window.safeStorage.getItem('scout-pulse-sound') !== 'false') playBeep();
         
         setTimeout(stopProgramming, 3000);
     } catch (error) {
@@ -955,7 +955,7 @@ async function handleScan(id) {
 
                 res.textContent = `✅ تم تحضير: ${scout.name}`;
                 res.classList.add('bg-emerald-500');
-                if(localStorage.getItem('scout-pulse-sound') !== 'false') playBeep();
+                if(window.safeStorage.getItem('scout-pulse-sound') !== 'false') playBeep();
                 
                 // Add to recent scans
                 recentScans.unshift({
@@ -1394,12 +1394,12 @@ async function confirmResetAttendance() {
 
 // Settings Persistence
 document.getElementById('setting-sound').addEventListener('change', e => {
-    localStorage.setItem('scout-pulse-sound', e.target.checked);
+    window.safeStorage.setItem('scout-pulse-sound', e.target.checked);
 });
 
 document.getElementById('setting-dark').addEventListener('change', e => {
     document.body.classList.toggle('light-mode', !e.target.checked);
-    localStorage.setItem('scout-pulse-dark', e.target.checked);
+    window.safeStorage.setItem('scout-pulse-dark', e.target.checked);
 });
 
 function playBeep() {
@@ -1576,10 +1576,10 @@ async function verifyAuthCode() {
         
         // حفظ بيانات المسؤول في الجلسة المحلية
         currentUser = tempLoginData;
-        localStorage.setItem('admin_session', JSON.stringify(currentUser));
+        window.safeStorage.setItem('admin_session', JSON.stringify(currentUser));
         
         // حفظ البريد للتذكر (Auto-fill)
-        localStorage.setItem('remembered_email', currentUser.email);
+        window.safeStorage.setItem('remembered_email', currentUser.email);
         
         updateGreeting();
         
@@ -1610,7 +1610,7 @@ function resetAuth() {
 }
 
 function logout() {
-    localStorage.removeItem('admin_session');
+    window.safeStorage.removeItem('admin_session');
     location.reload();
 }
 
@@ -1728,7 +1728,7 @@ async function saveAdminEdit() {
         if (id === currentUser.id) {
             currentUser.full_name = name;
             currentUser.email = email;
-            localStorage.setItem('admin_session', JSON.stringify(currentUser));
+            window.safeStorage.setItem('admin_session', JSON.stringify(currentUser));
             updateGreeting();
         }
     } catch (e) {
@@ -1750,12 +1750,12 @@ async function deleteAdmin(id) {
 
 function updateAttendanceSettings(val) {
     if (!val) val = document.getElementById('setting-end-time').value;
-    localStorage.setItem('scout-pulse-end-time', val);
+    window.safeStorage.setItem('scout-pulse-end-time', val);
     showToast("✅ تم حفظ وقت نهاية التحضير", "success");
 }
 
 async function checkAndFinalizeAttendance() {
-    const endTime = localStorage.getItem('scout-pulse-end-time') || "10:30";
+    const endTime = window.safeStorage.getItem('scout-pulse-end-time') || "10:30";
     const now = new Date();
     
     // لا يتم التحقق في أيام الإجازة (الجمعة والسبت)
@@ -1763,11 +1763,11 @@ async function checkAndFinalizeAttendance() {
 
     const currentTimeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
     const todayISO = now.toISOString().split('T')[0];
-    const lastFinalized = localStorage.getItem('scout-pulse-last-finalized');
+    const lastFinalized = window.safeStorage.getItem('scout-pulse-last-finalized');
 
     if (currentTimeStr >= endTime && lastFinalized !== todayISO) {
         // حفظ التاريخ فوراً لمنع التكرار أثناء المعالجة
-        localStorage.setItem('scout-pulse-last-finalized', todayISO);
+        window.safeStorage.setItem('scout-pulse-last-finalized', todayISO);
         await finalizeAbsentees(todayISO);
     }
 }
@@ -1804,7 +1804,7 @@ async function finalizeAbsentees(date) {
     } catch (err) {
         console.error("Finalize error:", err);
         // في حال الفشل، نمسح علامة الانتهاء لنحاول لاحقاً
-        localStorage.removeItem('scout-pulse-last-finalized');
+        window.safeStorage.removeItem('scout-pulse-last-finalized');
     }
 }
 
