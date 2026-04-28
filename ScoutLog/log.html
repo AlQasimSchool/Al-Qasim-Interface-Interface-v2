@@ -19,6 +19,10 @@
 
     <!-- Unified Auth System -->
     <script>
+        window.onerror = function(msg, url, line) {
+            alert("خطأ تقني (ScoutLog): " + msg + "\nالموقع: " + url + "\nالسطر: " + line);
+            return false;
+        };
         window.safeStorage = (function() {
             try {
                 const test = '__storage_test__';
@@ -39,7 +43,7 @@
             }
         })();
     </script>
-    <script src="../js/auth-unified.js?v=2.6" defer></script>
+    <script src="../js/auth-unified.js?v=2.7" defer></script>
     <style>
         :root {
             --primary: #6366f1;
