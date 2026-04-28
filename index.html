@@ -6,23 +6,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Al-Qasim Interface</title>
 
-    <link rel="icon" href="ico.png" type="image/png">
+    <link rel="icon" href="/ico.png" type="image/png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-    <!-- Modular Styles - Force Cache Update v8.0 -->
-    <link rel="stylesheet" href="/css/base.css?v=8.0">
-    <link rel="stylesheet" href="/css/layout.css?v=8.0">
-    <link rel="stylesheet" href="/css/components.css?v=8.0">
-    <link rel="stylesheet" href="/css/utilities.css?v=8.0">
-    <link rel="stylesheet" href="/css/calendar.css?v=8.0">
-    <link rel="stylesheet" href="/css/media.css?v=8.0">
-    <link rel="stylesheet" href="/css/docs.css?v=8.0">
+    <!-- Modular Styles - Force Cache Update v9.0 -->
+    <link rel="stylesheet" href="/css/base.css?v=9.0">
+    <link rel="stylesheet" href="/css/layout.css?v=9.0">
+    <link rel="stylesheet" href="/css/components.css?v=9.0">
+    <link rel="stylesheet" href="/css/utilities.css?v=9.0">
+    <link rel="stylesheet" href="/css/calendar.css?v=9.0">
+    <link rel="stylesheet" href="/css/media.css?v=9.0">
+    <link rel="stylesheet" href="/css/docs.css?v=9.0">
 
     <!-- Supabase CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
 
-    <!-- Mobile Debugger (Temporary for fixing) -->
+    <!-- Mobile Error Logger -->
     <script>
         window.onerror = function(msg, url, line) {
             const errDiv = document.createElement('div');
@@ -44,11 +44,9 @@
     </div>
 
     <script>
-        // Emergency Failsafe: Hide loading screen after 6s no matter what
         setTimeout(() => {
             const screen = document.getElementById('loading-screen');
             if (screen && !screen.classList.contains('hidden')) {
-                console.log('Mobile Failsafe: Force hiding loading screen');
                 screen.classList.add('hidden');
             }
         }, 6000);
@@ -57,32 +55,25 @@
     <!-- Authentication Overlay (Unified) -->
     <div id="authOverlay" class="auth-overlay">
         <div class="auth-split-container">
-            <!-- Left Side: Content & Branding -->
+            <!-- Left Side: Branding -->
             <div class="auth-left-side">
                 <div class="auth-branding">
                     <img src="/ico.png" alt="Logo" class="auth-logo-img">
                     <span class="auth-brand-name">Al-Qasim Interface</span>
                 </div>
-                
                 <div class="auth-welcome-text">
-                    <p class="auth-top-label">نظام إدارة المحتوى الذكي</p>
                     <h1 class="auth-main-heading">التحكم الكامل <br> في متناول يدك.</h1>
                     <p class="auth-description">بوابتك لإدارة شؤون كشافة عبدالرحمن بن القاسم بكل سهولة وأمان.</p>
                 </div>
-
                 <div class="auth-request-section">
-                    <p>ليس لديك حساب مسؤول؟</p>
                     <button class="request-account-link" onclick="window.showRequestStep()">طلب حساب مسؤول الآن ←</button>
-                </div>
-
-                <div class="auth-footer-minimal">
-                     جميع الحقوق محفوظة | القسم التقني لكاشفة عبدالرحمن بن القاسم
                 </div>
             </div>
 
-            <!-- Right Side: Hero & Login Card -->
+            <!-- Right Side: Login Card -->
             <div class="auth-right-side" style="background-image: url('/imgs/image (1).png');">
                 <div class="auth-card animate-in">
+                    <!-- Essential ID for auth-unified.js -->
                     <div id="auth-loading-state" class="auth-loading-state">
                         <div class="spinner"></div>
                         <p>جاري التحقق من الجلسة...</p>
@@ -92,7 +83,6 @@
                     <div id="auth-step-1" class="hidden">
                         <h2 class="auth-card-title">تسجيل الدخول</h2>
                         <p class="auth-card-subtitle">أدخل بريدك الإلكتروني للمتابعة</p>
-                        
                         <div class="auth-input-group">
                             <label>البريد الإلكتروني</label>
                             <div class="input-wrapper">
@@ -100,18 +90,12 @@
                                 <i class="fas fa-envelope input-icon-end"></i>
                             </div>
                         </div>
-                        
-                        <button id="sendCodeBtn" class="auth-btn-modern" onclick="sendAuthCode()">
-                            <span>إرسال رمز الدخول</span>
-                            <i class="fas fa-paper-plane"></i>
-                        </button>
+                        <button id="sendCodeBtn" class="auth-btn-modern" onclick="sendAuthCode()">إرسال رمز الدخول</button>
                     </div>
 
                     <!-- Step 2: OTP -->
                     <div id="auth-step-2" class="hidden">
                         <h2 class="auth-card-title">رمز التحقق</h2>
-                        <p class="auth-card-subtitle">أدخل الرمز المكون من 6 أرقام المرسل لبريدك</p>
-                        
                         <div class="auth-input-group">
                             <div class="otp-container">
                                 <input type="text" maxlength="1" class="otp-input" data-index="0">
@@ -122,55 +106,86 @@
                                 <input type="text" maxlength="1" class="otp-input" data-index="5">
                             </div>
                         </div>
-
-                        <button id="verifyOtpBtn" class="auth-btn-modern" onclick="verifyAuthCode()">
-                            <span>تأكيد الرمز</span>
-                            <i class="fas fa-shield-check"></i>
-                        </button>
-                        
-                        <button class="resend-link" onclick="window.backToStep1()">تغيير البريد الإلكتروني</button>
+                        <button id="verifyOtpBtn" class="auth-btn-modern" onclick="verifyAuthCode()">تأكيد الرمز</button>
+                        <button class="resend-link" onclick="window.backToStep1()">تغيير البريد</button>
                     </div>
 
-                    <!-- Step 3: Registration Request -->
+                    <!-- Step 3: Request -->
                     <div id="auth-step-request" class="hidden">
-                        <h2 class="auth-card-title">طلب حساب جديد</h2>
-                        <p class="auth-card-subtitle">أرسل بياناتك للإدارة لاعتماد حسابك</p>
-                        
+                        <h2 class="auth-card-title">طلب حساب</h2>
                         <div class="auth-input-group">
-                            <label>الاسم الكامل</label>
-                            <div class="input-wrapper">
-                                <input type="text" id="req-name" placeholder="الاسم الثلاثي">
-                                <i class="fas fa-user input-icon-end"></i>
-                            </div>
+                            <input type="text" id="req-name" placeholder="الاسم الكامل" style="width:100%; padding:15px; border-radius:12px; background:rgba(255,255,255,0.05); color:white; border:none; margin-bottom:10px;">
+                            <input type="email" id="req-email" placeholder="البريد الإلكتروني" style="width:100%; padding:15px; border-radius:12px; background:rgba(255,255,255,0.05); color:white; border:none;">
                         </div>
-
-                        <div class="auth-input-group">
-                            <label>البريد الإلكتروني</label>
-                            <div class="input-wrapper">
-                                <input type="email" id="req-email" placeholder="example@mail.com">
-                                <i class="fas fa-envelope input-icon-end"></i>
-                            </div>
-                        </div>
-
-                        <button class="auth-btn-modern" onclick="window.submitRequest()">
-                            <span>إرسال الطلب</span>
-                            <i class="fas fa-paper-plane"></i>
-                        </button>
-                        
-                        <button class="resend-link" onclick="window.backToStep1()">العودة لتسجيل الدخول</button>
+                        <button class="auth-btn-modern" onclick="window.submitRequest()">إرسال الطلب</button>
+                        <button class="resend-link" onclick="window.backToStep1()">عودة</button>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Password Popup (PIN Code for Students) -->
+    <!-- Biometric Overlay (REQUIRED by auth-unified.js) -->
+    <div id="biometricOverlay" class="biometric-overlay hidden">
+        <div class="bio-card animate-in">
+            <div id="bio-loading-state" class="auth-loading-state hidden">
+                <div class="spinner"></div>
+            </div>
+            <div id="bio-content-area">
+                <div class="auth-shield-box"><i class="fas fa-fingerprint"></i></div>
+                <h2 id="bio-admin-greeting" class="auth-title">مرحباً مسؤول</h2>
+                <p class="auth-subtitle">أدخل الـ PIN للمتابعة</p>
+                <div class="auth-input-group">
+                    <input type="password" id="bio-pin-input" class="auth-btn-modern" style="background:rgba(255,255,255,0.05); text-align:center; letter-spacing:10px;" placeholder="****" maxlength="4">
+                </div>
+                <button class="auth-btn-modern" onclick="verifyPinAuth()">دخول</button>
+                <button class="resend-link" onclick="window.logout()">تسجيل خروج</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- App Container -->
+    <div class="app">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-brand">
+                <div class="logo-icon"><img src="/ico.png" alt="Logo"></div>
+                <h2>واجهة القاسم</h2>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="#" class="nav-item active" onclick="window.navigateTo('dashboard')"><i class="fas fa-th-large"></i><span>الرئيسية</span></a>
+                <a href="#" class="nav-item" onclick="window.navigateTo('students')"><i class="fas fa-user-graduate"></i><span>الطلاب</span></a>
+                <a href="#" class="nav-item" onclick="window.navigateTo('tasks')"><i class="fas fa-tasks-alt"></i><span>المهام</span></a>
+                <a href="#" class="nav-item" onclick="window.navigateTo('calendar')"><i class="fas fa-calendar-day"></i><span>التقويم</span></a>
+            </nav>
+            <div class="sidebar-footer" style="margin-top:auto;"><a href="#" class="nav-item" onclick="window.logout()"><i class="fas fa-sign-out-alt"></i><span>خروج</span></a></div>
+        </aside>
+
+        <!-- Main -->
+        <main class="main" id="main-content">
+            <header class="app-header">
+                <div class="header-search"><i class="fas fa-search"></i><input type="text" placeholder="بحث..." id="global-search"><div id="search-results" class="search-results-floating"></div></div>
+                <div class="header-right"><div class="header-clock" id="header-clock">00:00</div></div>
+            </header>
+            <div id="page-content" class="page-section"></div>
+        </main>
+
+        <!-- Mobile Nav -->
+        <nav class="mobile-bottom-nav">
+            <a href="#" class="nav-item active" onclick="window.navigateTo('dashboard')"><i class="fas fa-th-large"></i><span>الرئيسية</span></a>
+            <a href="#" class="nav-item" onclick="window.navigateTo('students')"><i class="fas fa-user-graduate"></i><span>الطلاب</span></a>
+            <button class="nav-add-btn" onclick="window.navigateTo('calendar')"><i class="fas fa-calendar-alt"></i><span>التقويم</span></button>
+            <a href="#" class="nav-item" onclick="window.navigateTo('tasks')"><i class="fas fa-tasks-alt"></i><span>المهام</span></a>
+            <a href="#" class="nav-item" onclick="window.logout()"><i class="fas fa-sign-out-alt"></i><span>خروج</span></a>
+        </nav>
+    </div>
+
+    <!-- PIN Popup for Students page -->
     <div id="password-popup" class="password-overlay hidden">
         <div class="password-card animate-in">
             <div class="shield-icon"><i class="fas fa-lock"></i></div>
-            <h3>فك قفل البيانات الحساسة</h3>
-            <p>أدخل رمز الـ PIN المخصص للوصول لبيانات الطلاب</p>
-            <input type="password" id="pin-input" maxlength="6" placeholder="******" autocomplete="off">
+            <h3>تأكيد الهوية</h3>
+            <input type="password" id="pin-input" maxlength="6" placeholder="******">
             <div class="password-actions">
                 <button class="pass-btn cancel" onclick="window.closePasswordPopup()">إلغاء</button>
                 <button class="pass-btn confirm" onclick="window.verifyPinCode()">تأكيد</button>
@@ -178,112 +193,15 @@
         </div>
     </div>
 
-    <!-- App Main Container -->
-    <div class="app">
-        <!-- Sidebar Navigation -->
-        <aside class="sidebar" id="sidebar">
-            <div class="sidebar-brand">
-                <div class="logo-icon">
-                    <img src="/ico.png" alt="Logo">
-                </div>
-                <h2>واجهة القاسم</h2>
-            </div>
-            
-            <nav class="sidebar-nav">
-                <a href="#" class="nav-item active" data-page="dashboard" onclick="window.navigateTo('dashboard')">
-                    <i class="fas fa-th-large"></i>
-                    <span>الرئيسية</span>
-                </a>
-                <a href="#" class="nav-item" data-page="students" onclick="window.navigateTo('students')">
-                    <i class="fas fa-user-graduate"></i>
-                    <span>الطلاب</span>
-                </a>
-                <a href="#" class="nav-item" data-page="tasks" onclick="window.navigateTo('tasks')">
-                    <i class="fas fa-tasks-alt"></i>
-                    <span>المهام والتقارير</span>
-                </a>
-                <a href="#" class="nav-item" data-page="calendar" onclick="window.navigateTo('calendar')">
-                    <i class="fas fa-calendar-day"></i>
-                    <span>التقويم</span>
-                </a>
-                <a href="#" class="nav-item" data-page="settings" onclick="window.navigateTo('settings')">
-                    <i class="fas fa-cog"></i>
-                    <span>الإعدادات</span>
-                </a>
-            </nav>
-
-            <div class="sidebar-footer" style="margin-top: auto; padding: 20px 0;">
-                <a href="#" class="nav-item" onclick="window.logout()">
-                    <i class="fas fa-sign-out-alt"></i>
-                    <span>تسجيل الخروج</span>
-                </a>
-            </div>
-        </aside>
-
-        <!-- Main Content Area -->
-        <main class="main" id="main-content">
-            <!-- App Header -->
-            <header class="app-header">
-                <div class="header-search">
-                    <i class="fas fa-search"></i>
-                    <input type="text" placeholder="بحث سريع..." id="global-search">
-                    <!-- Floating Results -->
-                    <div id="search-results" class="search-results-floating"></div>
-                </div>
-
-                <div class="header-right">
-                    <div class="header-weather" id="header-weather">
-                        <i class="fas fa-cloud-sun"></i>
-                        <span>24°C</span>
-                    </div>
-                    <div class="header-clock" id="header-clock">00:00:00</div>
-                </div>
-            </header>
-
-            <!-- Dynamic Content Container -->
-            <div id="page-content" class="page-section">
-                <!-- Dashboard or other pages will be injected here -->
-            </div>
-        </main>
-
-        <!-- Mobile Bottom Navigation -->
-        <nav class="mobile-bottom-nav">
-            <a href="#" class="nav-item active" data-page="dashboard" onclick="window.navigateTo('dashboard')">
-                <i class="fas fa-th-large"></i>
-                <span>الرئيسية</span>
-            </a>
-            <a href="#" class="nav-item" data-page="students" onclick="window.navigateTo('students')">
-                <i class="fas fa-user-graduate"></i>
-                <span>الطلاب</span>
-            </a>
-            <button class="nav-add-btn" id="nav-center-btn" onclick="window.handleCenterAction()">
-                <i class="fas fa-calendar-alt"></i>
-                <span>التقويم</span>
-            </button>
-            <a href="#" class="nav-item" data-page="tasks" onclick="window.navigateTo('tasks')">
-                <i class="fas fa-tasks-alt"></i>
-                <span>المهام</span>
-            </a>
-            <a href="#" class="nav-item" onclick="window.logout()">
-                <i class="fas fa-sign-out-alt"></i>
-                <span>خروج</span>
-            </a>
-        </nav>
-    </div>
-
-    <!-- Toast Container for Notifications -->
     <div id="toast-container" class="toast-container"></div>
-
-    <!-- Hidden Print Section (Standardized) -->
     <div id="print-section" style="display: none;"></div>
 
-    <!-- Core App Scripts (Load as Modules at bottom) -->
-    <script src="/js/state.js?v=8.0" type="module"></script>
-    <script src="/js/api.js?v=8.0" type="module"></script>
-    <script src="/js/ui.js?v=8.0" type="module"></script>
-    <script src="/js/navigation.js?v=8.0" type="module"></script>
-    <script src="/js/app.js?v=8.0" type="module"></script>
-    <script src="/js/auth-unified.js?v=8.0"></script>
+    <!-- Scripts -->
+    <script src="/js/state.js?v=9.0" type="module"></script>
+    <script src="/js/api.js?v=9.0" type="module"></script>
+    <script src="/js/ui.js?v=9.0" type="module"></script>
+    <script src="/js/navigation.js?v=9.0" type="module"></script>
+    <script src="/js/app.js?v=9.0" type="module"></script>
+    <script src="/js/auth-unified.js?v=9.0"></script>
 </body>
-
 </html>

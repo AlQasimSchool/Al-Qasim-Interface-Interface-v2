@@ -37,7 +37,10 @@ async function checkSession() {
     const authOverlay = document.getElementById('authOverlay');
     const bioOverlay = document.getElementById('biometricOverlay');
 
-    const session = localStorage.getItem('admin_session');
+    let session = null;
+    try {
+        session = localStorage.getItem('admin_session');
+    } catch (e) { console.warn("Storage blocked"); }
     
     if (session) {
         try {
@@ -48,7 +51,6 @@ async function checkSession() {
             if (authStep1) authStep1.classList.add('hidden');
             if (bioContent) bioContent.classList.add('hidden');
 
-            // Verify if admin still exists in DB
             const { data: admin, error } = await _supabase
                 .from('admins')
                 .select('full_name, email, pin')
@@ -57,32 +59,32 @@ async function checkSession() {
             
             if (admin) {
                 currentUser = admin;
-                localStorage.setItem('admin_session', JSON.stringify(currentUser));
+                try {
+                    localStorage.setItem('admin_session', JSON.stringify(currentUser));
+                } catch(e) {}
                 
-                // Set UI greetings
                 const greetingEl = document.getElementById('bio-admin-greeting');
-                const subtitleEl = document.querySelector('#biometricOverlay .auth-subtitle');
                 if (greetingEl && currentUser.full_name) {
                     greetingEl.textContent = `مرحباً ${currentUser.full_name.split(' ')[0]}`;
                 }
-                if (subtitleEl) {
-                    subtitleEl.textContent = 'أدخل الرقم السري للعبور أو استخدم البصمة';
-                }
 
                 if (currentUser.pin) {
-                    authOverlay.classList.add('hidden');
-                    bioOverlay.classList.remove('hidden');
+                    if (authOverlay) authOverlay.classList.add('hidden');
+                    if (bioOverlay) bioOverlay.classList.remove('hidden');
                     if (bioContent) bioContent.classList.remove('hidden');
                     
-                    const isBiometricEnabled = localStorage.getItem('scout-pulse-biometric-enabled') === 'true';
-                    if (isBiometricEnabled) {
+                    let isBiometricEnabled = false;
+                    try {
+                        isBiometricEnabled = localStorage.getItem('scout-pulse-biometric-enabled') === 'true';
+                    } catch(e) {}
+                    
+                    if (isBiometricEnabled && typeof requestBiometricAccess === 'function') {
                         requestBiometricAccess();
                     }
                 } else {
                     showAuthStep(1);
                 }
             } else {
-                // Admin removed from DB, logout
                 logout();
             }
         } catch (e) { 
@@ -104,8 +106,8 @@ function showAuthStep(step) {
     const authStep2 = document.getElementById('auth-step-2');
     const bioOverlay = document.getElementById('biometricOverlay');
 
-    authOverlay.classList.remove('hidden');
-    bioOverlay.classList.add('hidden');
+    if (authOverlay) authOverlay.classList.remove('hidden');
+    if (bioOverlay) bioOverlay.classList.add('hidden');
 
     if (step === 1) {
         authStep1.classList.remove('hidden');
