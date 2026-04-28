@@ -111,35 +111,40 @@ export async function fetchStudentsFromDoc() {
     if (state.studentsCache) return state.studentsCache;
 
     if (!window._supabase) {
-        console.error('Supabase client not found on window object');
-        throw new Error('فشل الاتصال بقاعدة البيانات - يرجى تحديث الصفحة');
+        throw new Error('فشل الاتصال بقاعدة البيانات. يرجى التأكد من عدم وجود حاجب إعلانات.');
     }
 
+    const timeout = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error("TimeOut")), 10000)
+    );
+
     try {
-        const { data, error } = await window._supabase
-            .from('scouts')
-            .select('*')
-            .order('name');
+        const fetchJob = (async () => {
+            const { data, error } = await window._supabase
+                .from('scouts')
+                .select('*')
+                .order('name');
 
-        if (error) throw error;
+            if (error) throw error;
+            if (!data) throw new Error('لا توجد بيانات طلاب في قاعدة البيانات');
 
-        if (!data) throw new Error('لا توجد بيانات طلاب في قاعدة البيانات');
+            const students = data.map(s => ({
+                id: s.id || s.civil_id || 'N/A',
+                name: s.name || 'بدون اسم',
+                nationality: s.nationality || 'سعودي',
+                civilId: s.id || s.civil_id || '-',
+                section: s.section || s.patrol || '-',
+                phone: s.phone || '-'
+            }));
 
-        // Map Supabase 'scouts' table to our Student structure
-        const students = data.map(s => ({
-            id: s.id || s.civil_id || 'N/A',
-            name: s.name || 'بدون اسم',
-            nationality: s.nationality || 'سعودي',
-            civilId: s.id || s.civil_id || '-',
-            section: s.section || s.patrol || '-',
-            phone: s.phone || '-'
-        }));
+            state.studentsCache = students;
+            return students;
+        })();
 
-        state.studentsCache = students;
-        return students;
+        return await Promise.race([fetchJob, timeout]);
     } catch (err) {
         console.error('Students Fetch Error:', err);
-        showToast("فشل تحميل بيانات الطلاب: " + (err.message || "خطأ غير معروف"), "error");
+        if (err.message === "TimeOut") throw new Error("تأخر الرد من قاعدة البيانات. يرجى المحاولة مرة أخرى.");
         throw err;
     }
 }

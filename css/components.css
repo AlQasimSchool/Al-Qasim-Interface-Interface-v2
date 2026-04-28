@@ -2162,13 +2162,6 @@ input:checked + .slider-premium:before {
     to { opacity: 1; transform: translateX(0); }
 }
 
-@media (max-width: 1024px) {
-    .auth-split-container { flex-direction: column; overflow-y: auto; }
-    .auth-left-side { order: 2; padding: 40px 24px; min-height: 600px; }
-    .auth-right-side { order: 1; min-height: 450px; flex: none; }
-    .auth-main-heading { font-size: 2.5rem; }
-}
-
 .bio-card {
     position: relative;
 }
@@ -2357,11 +2350,65 @@ input:checked + .slider-premium:before {
     to { opacity: 1; transform: translateX(0); }
 }
 
-@media (max-width: 1024px) {
-    .auth-split-container { flex-direction: column; overflow-y: auto; }
-    .auth-left-side { order: 2; padding: 40px 24px; min-height: 600px; }
-    .auth-right-side { order: 1; min-height: 450px; flex: none; }
-    .auth-main-heading { font-size: 2.5rem; }
+@media (max-width: 850px) {
+    .auth-overlay { padding: 0; }
+    .auth-split-container { 
+        flex-direction: column; 
+        overflow-y: auto; 
+        height: 100vh;
+        background: #020617;
+    }
+    
+    .auth-left-side { 
+        order: 1; /* Branding first on very small screens or second? Let's keep branding visible */
+        padding: 40px 24px; 
+        min-height: auto; 
+        text-align: center;
+        justify-content: center;
+        background: transparent;
+        border: none;
+    }
+    
+    .auth-right-side { 
+        order: 2; 
+        min-height: 500px; 
+        flex: 1; 
+        padding: 20px;
+        background-attachment: scroll; /* Fix background issues on some mobiles */
+    }
+
+    .auth-main-heading { 
+        font-size: 2rem; 
+        margin-bottom: 15px;
+    }
+    
+    .auth-description {
+        font-size: 0.95rem;
+        margin: 0 auto 20px;
+    }
+
+    .auth-card {
+        padding: 30px 20px;
+        border-radius: 20px;
+        max-width: 100%;
+    }
+
+    .auth-title { font-size: 1.6rem; }
+    .auth-subtitle { margin-bottom: 30px; font-size: 0.85rem; }
+
+    .auth-branding {
+        justify-content: center;
+        margin-bottom: 20px;
+    }
+
+    .auth-request-section {
+        padding: 20px;
+        margin-top: 30px;
+    }
+
+    .auth-nav-arrows {
+        display: none; /* Hide confusing arrows on mobile auth */
+    }
 }
 
 .bio-card {
