@@ -156,7 +156,7 @@ function initReminderSystem() {
                     showToast(`تذكير: ${t.text}`, 'info', 10000);
                     
                     // Browser Notification if possible
-                    if (Notification.permission === "granted") {
+                    if (typeof Notification !== 'undefined' && Notification.permission === "granted") {
                         new Notification("تذكير من واجهة القاسم", { body: t.text });
                     }
                     
@@ -169,7 +169,7 @@ function initReminderSystem() {
     }, 30000); // Check every 30 seconds
 
     // Request Permission
-    if (Notification.permission === "default") {
+    if (typeof Notification !== 'undefined' && Notification.permission === "default") {
         Notification.requestPermission();
     }
 }
