@@ -11,12 +11,25 @@ let currentUser = null;
 let tempLoginData = null;
 let resendInterval = null;
 
+// Safe Storage Helper to handle "Tracking Prevention" blocking access
+const safeStorage = {
+    getItem: (key) => {
+        try { return localStorage.getItem(key); } catch (e) { return null; }
+    },
+    setItem: (key, val) => {
+        try { localStorage.setItem(key, val); } catch (e) { console.warn("Storage blocked", e); }
+    },
+    removeItem: (key) => {
+        try { localStorage.removeItem(key); } catch (e) { }
+    }
+};
+
 // Initialize Auth
 document.addEventListener('DOMContentLoaded', () => {
     checkSession();
     
     // Auto-fill email if remembered
-    const savedEmail = localStorage.getItem('remembered_email');
+    const savedEmail = safeStorage.getItem('remembered_email');
     if (savedEmail) {
         const emailInput = document.getElementById('login-email');
         if (emailInput) emailInput.value = savedEmail;
@@ -25,7 +38,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Sync Biometric Toggle UI
     const bioToggle = document.getElementById('biometric-toggle');
     if (bioToggle) {
-        bioToggle.checked = localStorage.getItem('scout-pulse-biometric-enabled') === 'true';
+        bioToggle.checked = safeStorage.getItem('scout-pulse-biometric-enabled') === 'true';
     }
 });
 
@@ -37,10 +50,7 @@ async function checkSession() {
     const authOverlay = document.getElementById('authOverlay');
     const bioOverlay = document.getElementById('biometricOverlay');
 
-    let session = null;
-    try {
-        session = localStorage.getItem('admin_session');
-    } catch (e) { console.warn("Storage blocked"); }
+    const session = safeStorage.getItem('admin_session');
     
     if (session) {
         try {
@@ -51,6 +61,7 @@ async function checkSession() {
             if (authStep1) authStep1.classList.add('hidden');
             if (bioContent) bioContent.classList.add('hidden');
 
+            // Verify if admin still exists in DB
             const { data: admin, error } = await _supabase
                 .from('admins')
                 .select('full_name, email, pin')
@@ -59,32 +70,32 @@ async function checkSession() {
             
             if (admin) {
                 currentUser = admin;
-                try {
-                    localStorage.setItem('admin_session', JSON.stringify(currentUser));
-                } catch(e) {}
+                safeStorage.setItem('admin_session', JSON.stringify(currentUser));
                 
+                // Set UI greetings
                 const greetingEl = document.getElementById('bio-admin-greeting');
+                const subtitleEl = document.querySelector('#biometricOverlay .auth-subtitle');
                 if (greetingEl && currentUser.full_name) {
                     greetingEl.textContent = `مرحباً ${currentUser.full_name.split(' ')[0]}`;
                 }
+                if (subtitleEl) {
+                    subtitleEl.textContent = 'أدخل الرقم السري للعبور أو استخدم البصمة';
+                }
 
                 if (currentUser.pin) {
-                    if (authOverlay) authOverlay.classList.add('hidden');
-                    if (bioOverlay) bioOverlay.classList.remove('hidden');
+                    authOverlay.classList.add('hidden');
+                    bioOverlay.classList.remove('hidden');
                     if (bioContent) bioContent.classList.remove('hidden');
                     
-                    let isBiometricEnabled = false;
-                    try {
-                        isBiometricEnabled = localStorage.getItem('scout-pulse-biometric-enabled') === 'true';
-                    } catch(e) {}
-                    
-                    if (isBiometricEnabled && typeof requestBiometricAccess === 'function') {
+                    const isBiometricEnabled = safeStorage.getItem('scout-pulse-biometric-enabled') === 'true';
+                    if (isBiometricEnabled) {
                         requestBiometricAccess();
                     }
                 } else {
                     showAuthStep(1);
                 }
             } else {
+                // Admin removed from DB, logout
                 logout();
             }
         } catch (e) { 
@@ -106,8 +117,8 @@ function showAuthStep(step) {
     const authStep2 = document.getElementById('auth-step-2');
     const bioOverlay = document.getElementById('biometricOverlay');
 
-    if (authOverlay) authOverlay.classList.remove('hidden');
-    if (bioOverlay) bioOverlay.classList.add('hidden');
+    authOverlay.classList.remove('hidden');
+    bioOverlay.classList.add('hidden');
 
     if (step === 1) {
         authStep1.classList.remove('hidden');
@@ -119,7 +130,9 @@ function showAuthStep(step) {
 }
 
 window.verifyPinCode = function() {
-    const pin = document.getElementById('lock-pin').value;
+    const pinInput = document.getElementById('lock-pin');
+    if (!pinInput) return;
+    const pin = pinInput.value;
     
     if (currentUser && currentUser.pin && pin === currentUser.pin) {
         document.getElementById('biometricOverlay').classList.add('hidden');
@@ -134,13 +147,17 @@ window.verifyPinCode = function() {
             }
         } else {
             if (window.updateGreeting) window.updateGreeting();
-            // Optional: generic login success message if needed, but keeping it empty as per previous "removed" comment if it's for general login
         }
     } else {
         showToast("الرقم السري غير صحيح", "error");
-        document.getElementById('lock-pin').value = '';
+        pinInput.value = '';
     }
 };
+
+// Aliases for compatibility with old cached buttons
+window.verifyPinAuth = window.verifyPinCode;
+window.verifyPin = window.verifyPinCode;
+
 
 window.closePromptModal = function() {
     document.getElementById('promptModal').classList.add('hidden');
@@ -270,7 +287,7 @@ window.requestPinChange = async function() {
                         
                         showToast("تم تحديث الرقم السري بنجاح", "success");
                         currentUser.pin = newPin;
-                        localStorage.setItem('admin_session', JSON.stringify(currentUser));
+                        safeStorage.setItem('admin_session', JSON.stringify(currentUser));
                         if (window.navigateTo) window.navigateTo('settings');
                         return true;
                     } catch (e) {
@@ -431,8 +448,8 @@ async function verifyAuthCode() {
         // Verification message removed as per user request
         
         currentUser = tempLoginData;
-        localStorage.setItem('admin_session', JSON.stringify(currentUser));
-        localStorage.setItem('remembered_email', currentUser.email);
+        safeStorage.setItem('admin_session', JSON.stringify(currentUser));
+        safeStorage.setItem('remembered_email', currentUser.email);
         
         const greetingEl = document.getElementById('bio-admin-greeting');
         if (greetingEl && currentUser.full_name) {
@@ -483,7 +500,7 @@ async function toggleBiometricLock(checkbox) {
             });
 
             if (credential) {
-                localStorage.setItem('scout-pulse-biometric-enabled', 'true');
+                safeStorage.setItem('scout-pulse-biometric-enabled', 'true');
                 showToast("تم تفعيل القفل بالبصمة بنجاح", "success");
             }
         } catch (err) {
@@ -492,13 +509,13 @@ async function toggleBiometricLock(checkbox) {
             checkbox.checked = false;
         }
     } else {
-        localStorage.removeItem('scout-pulse-biometric-enabled');
+        safeStorage.removeItem('scout-pulse-biometric-enabled');
         showToast("تم إيقاف القفل بالبصمة", "info");
     }
 }
 
 async function requestBiometricAccess() {
-    const isBiometricEnabled = localStorage.getItem('scout-pulse-biometric-enabled') === 'true';
+    const isBiometricEnabled = safeStorage.getItem('scout-pulse-biometric-enabled') === 'true';
     if (!isBiometricEnabled) {
         showToast("البصمة غير مفعلة، يرجى استخدام الرقم السري", "warning");
         return;
@@ -584,7 +601,7 @@ window.submitAdminRequest = async function() {
 
 function logout() {
     window.showConfirm("تسجيل الخروج", "هل أنت متأكد أنك تريد تسجيل الخروج من النظام؟", () => {
-        localStorage.removeItem('admin_session');
+        safeStorage.removeItem('admin_session');
         location.reload();
     });
 }

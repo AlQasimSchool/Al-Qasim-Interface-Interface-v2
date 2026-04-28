@@ -2351,79 +2351,63 @@ input:checked + .slider-premium:before {
 }
 
 @media (max-width: 850px) {
-    /* Full Redesign for Mobile Auth */
-    .auth-overlay { 
-        padding: 0; 
-        background: #020617; /* Dark elegant background instead of blur only */
-    }
-    
+    .auth-overlay { padding: 0; }
     .auth-split-container { 
-        display: block; /* Disable flex split for mobile */
+        flex-direction: column; 
+        overflow-y: auto; 
         height: 100vh;
-        overflow-y: auto;
+        background: #020617;
     }
     
     .auth-left-side { 
-        padding: 40px 20px 20px;
+        order: 1; /* Branding first on very small screens or second? Let's keep branding visible */
+        padding: 40px 24px; 
+        min-height: auto; 
         text-align: center;
+        justify-content: center;
         background: transparent;
         border: none;
-        min-height: auto;
     }
-
-    .auth-branding {
-        justify-content: center;
-        margin-bottom: 15px;
+    
+    .auth-right-side { 
+        order: 2; 
+        min-height: 500px; 
+        flex: 1; 
+        padding: 20px;
+        background-attachment: scroll; /* Fix background issues on some mobiles */
     }
-
-    .auth-logo-img { width: 45px; height: 45px; }
-    .auth-brand-name { font-size: 1.1rem; }
 
     .auth-main-heading { 
-        font-size: 1.8rem; 
-        margin-bottom: 10px;
-        line-height: 1.2;
+        font-size: 2rem; 
+        margin-bottom: 15px;
     }
     
     .auth-description {
-        font-size: 0.9rem;
-        opacity: 0.7;
-        margin-bottom: 0;
+        font-size: 0.95rem;
+        margin: 0 auto 20px;
     }
-
-    .auth-right-side { 
-        padding: 10px 20px 40px;
-        background-image: none !important; /* Hide heavy image on mobile */
-        min-height: auto;
-    }
-
-    .auth-right-side::after { display: none; } /* Remove gradient overlay */
 
     .auth-card {
-        background: rgba(15, 23, 42, 0.8);
-        border: 1px solid rgba(255, 255, 255, 0.1);
         padding: 30px 20px;
-        border-radius: 24px;
-        box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+        border-radius: 20px;
+        max-width: 100%;
     }
 
-    .auth-title { font-size: 1.5rem; }
-    .auth-subtitle { font-size: 0.85rem; margin-bottom: 30px; }
+    .auth-title { font-size: 1.6rem; }
+    .auth-subtitle { margin-bottom: 30px; font-size: 0.85rem; }
 
-    .input-wrapper input {
-        padding: 16px 16px 16px 45px;
-        font-size: 1rem;
-    }
-
-    .auth-btn-modern {
-        padding: 16px;
-        font-size: 1rem;
+    .auth-branding {
+        justify-content: center;
+        margin-bottom: 20px;
     }
 
     .auth-request-section {
-        margin-top: 30px;
         padding: 20px;
-        background: rgba(255, 255, 255, 0.03);
+        margin-top: 30px;
+    }
+
+    .auth-nav-arrows {
+        display: none; /* Hide confusing arrows on mobile auth */
     }
 }
 

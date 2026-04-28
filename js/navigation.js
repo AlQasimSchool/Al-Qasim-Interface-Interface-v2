@@ -162,32 +162,37 @@ export function updateSidebarFooter() {
 }
 
 export async function loadDashboardStats() {
-    // Force hide loading screen on mobile quickly
-    if (window.innerWidth < 850) {
-        const screen = document.getElementById('loading-screen');
-        if (screen) screen.classList.add('hidden');
+    try {
+        const files = await fetchDriveFiles();
+        const el = document.getElementById('stat-docs');
+        if (el) el.textContent = files.length;
+    } catch (e) { console.error('Stats Error:', e); }
+
+    try {
+        const videos = await fetchYouTubeVideos();
+        updateVideoStat(videos.length);
+    } catch (e) { console.error('Stats Error:', e); }
+
+    try {
+        const reports = await fetchReportFiles();
+        const el = document.getElementById('stat-reports');
+        if (el) el.textContent = reports.length;
+    } catch (e) { console.error('Stats Error:', e); }
+
+    try {
+        const students = await fetchStudentsFromDoc();
+        const el = document.getElementById('stat-students');
+        if (el) el.textContent = students.length;
+    } catch (e) { console.error('Stats Error:', e); }
+
+    // Render Components
+    const { loadTasks } = await import('./tasks.js');
+    if (!state.tasksCache) {
+        await loadTasks();
+    } else if (window.renderDashboardTasks) {
+        window.renderDashboardTasks();
     }
-
-    const jobs = [
-        fetchDriveFiles().then(d => { if(document.getElementById('stat-docs')) document.getElementById('stat-docs').textContent = d.length; }).catch(e=>e),
-        fetchYouTubeVideos().then(v => updateVideoStat(v.length)).catch(e=>e),
-        fetchReportFiles().then(r => { if(document.getElementById('stat-reports')) document.getElementById('stat-reports').textContent = r.length; }).catch(e=>e),
-        fetchStudentsFromDoc().then(s => { if(document.getElementById('stat-students')) document.getElementById('stat-students').textContent = s.length; }).catch(e=>e)
-    ];
-
-    const taskJob = (async () => {
-        try {
-            const { loadTasks } = await import('./tasks.js');
-            if (!state.tasksCache) await loadTasks();
-            else if (window.renderDashboardTasks) window.renderDashboardTasks();
-        } catch (e) {}
-    })();
-
-    Promise.allSettled([...jobs, taskJob]).then(() => {
-        renderLatestVideo();
-        const screen = document.getElementById('loading-screen');
-        if (screen) screen.classList.add('hidden');
-    });
+    renderLatestVideo();
 }
 
 async function renderLatestVideo() {
@@ -404,13 +409,10 @@ export async function renderStudents() {
     } catch (err) {
         console.error("Students render error", err);
         container.innerHTML = `
-            <div class="error-state animate-in" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 60px 20px; text-align: center; gap: 20px;">
-                <i class="fas fa-wifi-slash" style="font-size: 4rem; color: #e74c3c; opacity: 0.8;"></i>
-                <h2 style="font-size: 1.5rem; font-weight: 800;">عذراً، تعذر الوصول للبيانات</h2>
-                <p style="color: var(--text-secondary); max-width: 400px; font-weight: 600;">${err.message || 'تأكد من اتصال الإنترنت أو إعدادات الحماية في متصفحك.'}</p>
-                <button class="glass-btn" onclick="window.navigateTo('students')" style="padding: 12px 30px; border-radius: 12px; background: var(--primary); color: white; border: none; font-weight: 800; cursor: pointer;">
-                    <i class="fas fa-sync-alt" style="margin-left: 8px;"></i>إعادة المحاولة
-                </button>
+            <div class="error-state animate-in">
+                <i class="fas fa-exclamation-triangle"></i>
+                <p>فشل تحميل البيانات. تأكد من اتصال الإنترنت أو إعدادات الحماية.</p>
+                <button class="glass-btn" onclick="window.navigateTo('students')">إعادة المحاولة</button>
             </div>
         `;
     }
