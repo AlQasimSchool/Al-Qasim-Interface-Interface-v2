@@ -321,11 +321,33 @@
 
             <!-- Page Specific Content -->
             <div id="page-content">
-                <div class="loading-state">
+                <div class="loading-state" id="initial-loader">
                     <div class="spinner"></div>
                     <p>جاري تحميل البيانات...</p>
+                    <button id="force-enter-btn" onclick="location.reload()" class="auth-btn-modern hidden" style="margin-top: 20px; width: auto; padding: 10px 30px;">
+                        تحديث الصفحة
+                    </button>
                 </div>
             </div>
+
+            <script>
+                // Emergency Loader Timeout
+                setTimeout(() => {
+                    const loader = document.getElementById('initial-loader');
+                    if (loader && !loader.classList.contains('hidden')) {
+                        const btn = document.getElementById('force-enter-btn');
+                        if (btn) btn.classList.remove('hidden');
+                        const p = loader.querySelector('p');
+                        if (p) p.textContent = "يبدو أن التحميل يستغرق وقتاً طويلاً...";
+                        
+                        // Try to rescue
+                        if (window.state && window.navigateTo) {
+                             console.log("Attempting emergency navigation...");
+                             window.navigateTo('dashboard');
+                        }
+                    }
+                }, 6000);
+            </script>
         </main>
 
         <!-- Mobile Bottom Nav - Exact Mockup Mapping -->

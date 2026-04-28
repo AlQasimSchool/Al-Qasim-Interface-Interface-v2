@@ -18,7 +18,28 @@
     <script src="https://npmcdn.com/flatpickr/dist/l10n/ar.js"></script>
 
     <!-- Unified Auth System -->
-    <script src="../js/auth-unified.js?v=2.5" defer></script>
+    <script>
+        window.safeStorage = (function() {
+            try {
+                const test = '__storage_test__';
+                localStorage.setItem(test, test);
+                localStorage.removeItem(test);
+                return {
+                    getItem: (k) => localStorage.getItem(k),
+                    setItem: (k, v) => localStorage.setItem(k, v),
+                    removeItem: (k) => localStorage.removeItem(k)
+                };
+            } catch (e) {
+                const mem = {};
+                return {
+                    getItem: (k) => mem[k] || null,
+                    setItem: (k, v) => mem[k] = String(v),
+                    removeItem: (k) => delete mem[k]
+                };
+            }
+        })();
+    </script>
+    <script src="../js/auth-unified.js?v=2.6" defer></script>
     <style>
         :root {
             --primary: #6366f1;

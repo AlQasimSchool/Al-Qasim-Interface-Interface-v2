@@ -1,15 +1,15 @@
 export function trackClick(item) {
-    let history = JSON.parse(localStorage.getItem('scout_history') || '{}');
+    let history = JSON.parse(window.safeStorage.getItem('scout_history') || '{}');
     if (!history[item.id]) {
         history[item.id] = { ...item, count: 0 };
     }
     history[item.id].count += 1;
     history[item.id].lastOpened = Date.now();
-    localStorage.setItem('scout_history', JSON.stringify(history));
+    window.safeStorage.setItem('scout_history', JSON.stringify(history));
 }
 
 export function getMostOpened() {
-    let history = JSON.parse(localStorage.getItem('scout_history') || '{}');
+    let history = JSON.parse(window.safeStorage.getItem('scout_history') || '{}');
     const now = Date.now();
 
     return Object.values(history)

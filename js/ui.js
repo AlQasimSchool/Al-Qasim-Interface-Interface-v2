@@ -8,7 +8,7 @@ import { DEFAULT_LINKS } from './data.js';
 export const templates = {
     /* ===================== الرئيسية ===================== */
     dashboard: () => {
-        const adminSession = JSON.parse(localStorage.getItem('admin_session') || '{}');
+        const adminSession = JSON.parse(window.safeStorage.getItem('admin_session') || '{}');
         const firstName = adminSession.full_name ? adminSession.full_name.split(' ')[0] : 'القائد';
         const opened = getMostOpened();
         let mostOpenedHtml = '';
@@ -601,7 +601,7 @@ export const templates = {
     `,
 
     settings: () => {
-        const admin = JSON.parse(localStorage.getItem('admin_session') || '{}');
+        const admin = JSON.parse(window.safeStorage.getItem('admin_session') || '{}');
         return `
         <div class="page-section animate-fade">
             <div class="page-header sticky-header">
@@ -649,7 +649,7 @@ export const templates = {
                                 <p>طلب البصمة عند فتح البيانات الحساسة أو تسجيل الدخول.</p>
                             </div>
                             <label class="switch-premium">
-                                <input type="checkbox" id="setting-biometric-toggle" ${localStorage.getItem('scout-pulse-biometric-enabled') === 'true' ? 'checked' : ''} onchange="window.toggleBiometricLock(this)">
+                                <input type="checkbox" id="setting-biometric-toggle" ${window.safeStorage.getItem('scout-pulse-biometric-enabled') === 'true' ? 'checked' : ''} onchange="window.toggleBiometricLock(this)">
                                 <span class="slider-premium"></span>
                             </label>
                         </div>

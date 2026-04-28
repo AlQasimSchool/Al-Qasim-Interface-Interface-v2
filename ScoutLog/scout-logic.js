@@ -50,7 +50,7 @@ function init() {
     console.log("🚀 Initializing Scout System...");
     
     // Safety check: ensure unified auth has prioritized control
-    if (!localStorage.getItem('admin_session')) {
+    if (!window.safeStorage.getItem('admin_session')) {
         console.log("No active session. Waiting for authentication...");
         return;
     }
@@ -108,8 +108,8 @@ async function handleAutoScan(id) {
 }
 
 function applySettings() {
-    const isSound = localStorage.getItem('scout-pulse-sound') !== 'false';
-    const isDark = localStorage.getItem('scout-pulse-dark') !== 'false';
+    const isSound = window.safeStorage.getItem('scout-pulse-sound') !== 'false';
+    const isDark = window.safeStorage.getItem('scout-pulse-dark') !== 'false';
     
     document.getElementById('setting-sound').checked = isSound;
     document.getElementById('setting-dark').checked = isDark;
@@ -586,7 +586,7 @@ async function startProgramming(scoutId) {
         // Success!
         document.getElementById('writeStatus').classList.add('hidden');
         document.getElementById('writeSuccess').classList.remove('hidden');
-        if(localStorage.getItem('scout-pulse-sound') !== 'false') playBeep();
+        if(window.safeStorage.getItem('scout-pulse-sound') !== 'false') playBeep();
         
         setTimeout(() => {
             stopProgramming();
@@ -672,7 +672,7 @@ async function handleScan(id) {
 
                 res.textContent = `✅ تم تحضير: ${scout.name}`;
                 res.classList.add('bg-emerald-500');
-                if(localStorage.getItem('scout-pulse-sound') !== 'false') playBeep();
+                if(window.safeStorage.getItem('scout-pulse-sound') !== 'false') playBeep();
                 
                 // Add to recent scans
                 recentScans.unshift({
@@ -975,12 +975,12 @@ async function confirmResetAttendance() {
 
 // Settings Persistence
 document.getElementById('setting-sound').addEventListener('change', e => {
-    localStorage.setItem('scout-pulse-sound', e.target.checked);
+    window.safeStorage.setItem('scout-pulse-sound', e.target.checked);
 });
 
 document.getElementById('setting-dark').addEventListener('change', e => {
     document.body.classList.toggle('light-mode', !e.target.checked);
-    localStorage.setItem('scout-pulse-dark', e.target.checked);
+    window.safeStorage.setItem('scout-pulse-dark', e.target.checked);
 });
 
 function playBeep() {
