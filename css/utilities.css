@@ -59,16 +59,16 @@
     display: block !important;
     position: fixed;
     pointer-events: none;
-    z-index: 0;
-    opacity: 0.12;
-    width: 450px;
-    height: 450px;
+    z-index: -5;
+    opacity: 0.05;
+    width: 650px;
+    height: 650px;
     background-image: url('../islamic_pattern.png');
     background-size: cover;
     background-repeat: no-repeat;
-    filter: sepia(0.3) contrast(1.1) brightness(0.9);
-    mask-image: radial-gradient(circle, black, transparent 70%);
-    -webkit-mask-image: radial-gradient(circle, black, transparent 70%);
+    filter: brightness(1.5) grayscale(1);
+    mask-image: radial-gradient(circle, black, transparent 80%);
+    -webkit-mask-image: radial-gradient(circle, black, transparent 80%);
 }
 
 .decoration-bl {
@@ -88,4 +88,8 @@
 
 body[data-page="dashboard"] .islamic-decoration {
     display: block;
+}
+
+.hidden {
+    display: none !important;
 }

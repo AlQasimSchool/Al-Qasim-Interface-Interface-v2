@@ -1,22 +1,21 @@
-import { navigateTo, renderDocuments, renderReports, renderStudents, updateClock } from './navigation.js';
+import { navigateTo, renderDocuments, renderReports, renderStudents, updateClock, updateSidebarFooter } from './navigation.js';
 import { handleGlobalSearch } from './search.js';
 import { fetchWeather } from './api.js';
 import { getWeatherIcon } from './utils.js';
 import { state, saveDocsViewMode } from './state.js';
 import { initCalendar, selectedDay, calDate, calEvents } from './calendar.js';
-import { renderSidebarTasks, addTask, toggleTask, deleteTask } from './tasks.js';
+import { renderSidebarTasks, addTask, toggleTask, deleteTask, loadTasks } from './tasks.js';
 import { trackClick } from './tracking.js';
 import { deleteCustomLink, saveCustomLink } from './links.js';
 import { STUDENTS_PASSWORD } from './students.js';
-import { initNotifications } from './notifications.js';
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     // 1. Initial Navigation & UI
     navigateTo('dashboard');
     updateClock();
+    updateSidebarFooter();
     initGlobalWeather();
-    renderSidebarTasks();
-    initNotifications();
+    await loadTasks();
 
     // 2. Continuous Features
     setInterval(updateClock, 1000);
@@ -25,7 +24,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.body.addEventListener('click', async (e) => {
         // Sidebar Navigation
         const navItem = e.target.closest('.nav-item');
-        if (navItem) {
+        if (navItem && !navItem.classList.contains('external')) {
             e.preventDefault();
             navigateTo(navItem.dataset.page);
             updateCenterButton(navItem.dataset.page);
@@ -145,73 +144,18 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.target.closest('#add-sidebar-task') || e.target.closest('#add-sidebar-note')) {
             const isTask = e.target.closest('#add-sidebar-task');
             const input = document.getElementById('sidebar-task-input');
-            const dateInput = document.getElementById('sidebar-task-date');
-            const timeInput = document.getElementById('sidebar-task-time');
-            let reminder = null;
-
-            if (timeInput && timeInput.value) {
-                const now = new Date();
-                const localDateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-                const dateVal = dateInput.value || localDateStr;
-                const [h, m] = timeInput.value.split(':').map(Number);
-                const [y, mm, d] = dateVal.split('-').map(Number);
-                reminder = new Date(y, mm - 1, d, h, m).toISOString();
-            } else if (dateInput && dateInput.value) {
-                const [y, mm, d] = dateInput.value.split('-').map(Number);
-                reminder = new Date(y, mm - 1, d, 8, 0).toISOString();
-            }
-
-            await addTask(input.value, isTask ? 'task' : 'note', reminder);
+            await addTask(input.value, isTask ? 'task' : 'note');
             input.value = '';
-            if (dateInput) dateInput.value = '';
-            if (timeInput) timeInput.value = '';
         }
 
         // Dashboard Card Tasks
         if (e.target.closest('#add-dash-task') || e.target.closest('#add-dash-note')) {
             const isTask = e.target.closest('#add-dash-task');
             const input = document.getElementById('dashboard-task-input');
-            const dateInput = document.getElementById('dashboard-task-date');
-            const timeInput = document.getElementById('dashboard-task-time');
-            let reminder = null;
-
-            if (timeInput && timeInput.value) {
-                const now = new Date();
-                const localDateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-                const dateVal = dateInput.value || localDateStr;
-                const [h, m] = timeInput.value.split(':').map(Number);
-                const [y, mm, d] = dateVal.split('-').map(Number);
-                reminder = new Date(y, mm - 1, d, h, m).toISOString();
-            } else if (dateInput && dateInput.value) {
-                const [y, mm, d] = dateInput.value.split('-').map(Number);
-                reminder = new Date(y, mm - 1, d, 8, 0).toISOString();
-            }
-
-            await addTask(input.value, isTask ? 'task' : 'note', reminder);
+            await addTask(input.value, isTask ? 'task' : 'note');
             input.value = '';
-            if (dateInput) dateInput.value = '';
-            if (timeInput) timeInput.value = '';
         }
 
-        // Toggle Schedule Visibility (Sidebar)
-        if (e.target.closest('#toggle-sidebar-schedule')) {
-            const btn = e.target.closest('#toggle-sidebar-schedule');
-            const row = document.getElementById('sidebar-schedule-row');
-            if (row) {
-                row.classList.toggle('hidden');
-                btn.classList.toggle('active');
-            }
-        }
-
-        // Toggle Schedule Visibility (Dashboard)
-        if (e.target.closest('#toggle-dash-schedule')) {
-            const btn = e.target.closest('#toggle-dash-schedule');
-            const row = document.getElementById('dashboard-schedule-row');
-            if (row) {
-                row.classList.toggle('hidden');
-                btn.classList.toggle('active');
-            }
-        }
 
         const taskCheck = e.target.closest('.sidebar-check');
         if (taskCheck) {
@@ -408,57 +352,34 @@ document.addEventListener('DOMContentLoaded', () => {
         modal.querySelector('.pdf-modal-close').onclick = () => modal.remove();
     }
 
-    function openPasswordPopup() {
-        if (document.getElementById('password-popup')) return;
-
-        const modal = document.createElement('div');
-        modal.id = 'password-popup';
-        modal.className = 'password-popup-modal';
-        modal.innerHTML = `
-            <div class="password-popup-backdrop"></div>
-            <div class="password-popup-content animate-in">
-                <input type="text" name="fake-user" style="display:none" aria-hidden="true" tabindex="-1">
-                <input type="password" name="fake-pass" style="display:none" aria-hidden="true" tabindex="-1">
-                
-                <div class="password-popup-icon"><i class="fas fa-user-shield"></i></div>
-                <h3>التحقق من الهوية</h3>
-                <p>يرجى إدخال كلمة المرور لرؤية البيانات الحساسة.</p>
-                
-                <div class="lock-form" style="display: flex; flex-direction: column; gap: 12px; align-items: center">
-                    <input type="password" id="popup-password" placeholder="كلمة المرور" 
-                           autocomplete="new-password" autofocus 
-                           style="width: 100%; max-width: 300px; text-align: center">
-                    
-                    <button id="popup-unlock-btn" style="width: 100%; max-width: 300px">فتح</button>
-                </div>
-                <div id="popup-error" class="lock-error"></div>
-            </div>
-        `;
-        document.body.appendChild(modal);
-
-        const input = modal.querySelector('#popup-password');
-        const unlock = () => {
-            if (input.value === STUDENTS_PASSWORD) {
-                state.isStudentsUnlocked = true;
-                unblurStudentsData();
-                modal.remove();
-            } else {
-                modal.querySelector('#popup-error').textContent = 'كلمة المرور خاطئة';
-                input.value = '';
-                input.focus();
-            }
-        };
-
-        modal.querySelector('#popup-unlock-btn').onclick = unlock;
-        modal.querySelector('.password-popup-backdrop').onclick = () => modal.remove();
-        input.onkeydown = (e) => { if (e.key === 'Enter') unlock(); };
+    async function openPasswordPopup() {
+        window.pendingUnlock = 'students';
+        document.getElementById('biometricOverlay').classList.remove('hidden');
+        document.getElementById('lock-pin').value = '';
+        
+        const isBiometricEnabled = localStorage.getItem('scout-pulse-biometric-enabled') === 'true';
+        if (isBiometricEnabled) {
+            if (window.requestBiometricAccess) window.requestBiometricAccess();
+        } else {
+            const bioBtn = document.getElementById('bio-unlock-btn');
+            if (bioBtn) bioBtn.style.display = 'none';
+        }
     }
 
     function unblurStudentsData() {
         document.querySelectorAll('.student-sensitive span.blurred').forEach(el => {
             el.classList.remove('blurred');
         });
+        // Also update the unlock button icon if it exists
+        const unlockBtn = document.getElementById('students-unlock-btn');
+        if (unlockBtn) {
+            unlockBtn.innerHTML = '<i class="fas fa-lock-open"></i> <span>تم الفتح</span>';
+            unlockBtn.style.color = 'var(--primary)';
+        }
     }
+    
+    window.openPasswordPopup = openPasswordPopup;
+    window.unblurStudentsData = unblurStudentsData;
 
     function handleStudentsSearch(val) {
         val = val.toLowerCase().trim();
@@ -560,6 +481,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Make it accessible globally
     window.updateCenterButton = updateCenterButton;
+    window.triggerAddEvent = () => {
+        if (selectedDay) {
+            const parts = selectedDay.split('-');
+            const dayNum = parseInt(parts[2]);
+            window.openCalendarModal(selectedDay, dayNum);
+        } else {
+            const today = new Date();
+            const todayStr = `${today.getFullYear()}-${today.getMonth()}-${today.getDate()}`;
+            window.openCalendarModal(todayStr, today.getDate());
+        }
+    };
 });
 
 import { fetchDriveFiles, fetchYouTubeVideos } from './api.js';

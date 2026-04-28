@@ -8,6 +8,8 @@ import { STUDENTS } from './students.js'; // Added this import
 export const templates = {
     /* ===================== الرئيسية ===================== */
     dashboard: () => {
+        const adminSession = JSON.parse(localStorage.getItem('admin_session') || '{}');
+        const firstName = adminSession.full_name ? adminSession.full_name.split(' ')[0] : 'القائد';
         const opened = getMostOpened();
         let mostOpenedHtml = '';
 
@@ -45,7 +47,7 @@ export const templates = {
             <div class="page-section animate-fade">
                 <div class="dashboard-header-flex">
                     <div class="page-header">
-                        <h1><i class="fas fa-hand-wave" style="margin-left:10px;color:var(--primary-green)"></i>أهلاً بعودتك، عبدالرحمن الرميح</h1>
+                        <h1><i class="fas fa-hand-wave" style="margin-left:10px;color:var(--primary)"></i>أهلاً بعودتك، ${firstName}</h1>
                         <p>سعيدون برؤيتك مجدداً في لوحة التحكم الخاصة بك.</p>
                     </div>
                 </div>
@@ -65,7 +67,7 @@ export const templates = {
                     </div>
                     <div class="stat-widget animate-in stagger-4">
                         <div class="stat-icon card-icon blue"><i class="fas fa-link"></i></div>
-                        <div class="stat-info"><h4>5</h4><span>رابط مفيد</span></div>
+                        <div class="stat-info"><h4>10</h4><span>رابط مفيد</span></div>
                     </div>
                 </div>
 
@@ -105,20 +107,9 @@ export const templates = {
                         
                         <div class="card-input-group">
                             <input type="text" id="dashboard-task-input" placeholder="اكتب شيئاً...">
-                            <div id="dashboard-schedule-row" class="task-schedule-row hidden">
-                                <div class="task-input-field">
-                                    <i class="fas fa-calendar-day"></i>
-                                    <input type="date" id="dashboard-task-date">
-                                </div>
-                                <div class="task-input-field">
-                                    <i class="fas fa-clock"></i>
-                                    <input type="time" id="dashboard-task-time">
-                                </div>
-                            </div>
                             <div class="card-input-btns btns">
                                 <button id="add-dash-note" title="إضافة ملاحظة"><i class="fas fa-sticky-note"></i> ملاحظة</button>
                                 <button id="add-dash-task" title="إضافة مهمة"><i class="fas fa-plus"></i> مهمة</button>
-                                <button id="toggle-dash-schedule" class="btn-toggle-schedule" title="جدولة التذكير"><i class="fas fa-calendar-alt"></i></button>
                             </div>
                         </div>
                     </div>
@@ -132,7 +123,7 @@ export const templates = {
         <div class="page-section animate-fade">
             <div class="page-header sticky-header">
                 <div>
-                    <h1><i class="fas fa-folder-open" style="margin-left:10px;color:var(--primary-green)"></i>المستندات</h1>
+                    <h1><i class="fas fa-folder-open" style="margin-left:10px;color:var(--primary)"></i>المستندات</h1>
                     <div id="folder-breadcrumb" class="breadcrumb" style="margin-top:4px"></div>
                 </div>
                 <div class="header-actions">
@@ -151,8 +142,16 @@ export const templates = {
     <div class="page-section animate-fade">
             <div class="page-header sticky-header">
                 <div>
-                    <h1><i class="fas fa-calendar-alt" style="margin-left:10px;color:var(--primary-green)"></i>التقويم</h1>
+                    <h1><i class="fas fa-calendar-alt" style="margin-left:10px;color:var(--primary)"></i>التقويم</h1>
                     <p style="margin-top:4px">خطط لمستقبلك الكشفي! اضغط على أي يوم لإضافة حدث.</p>
+                </div>
+                <div class="header-actions">
+                    <button id="pc-add-event-btn" class="glass-btn" title="إضافة حدث جديد" onclick="window.triggerAddEvent()">
+                        <i class="fas fa-plus-circle"></i> <span>إضافة حدث</span>
+                    </button>
+                    <button id="refresh-calendar" class="glass-btn" title="تحديث البيانات">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
                 </div>
             </div>
             <div class="calendar-wrapper animate-in">
@@ -168,7 +167,7 @@ export const templates = {
             </div>
 
             <div class="upcoming-events-section animate-in">
-                <h3 class="section-title"><i class="fas fa-list-check" style="margin-left:8px;color:var(--primary-green)"></i>جدول الأعمال</h3>
+                <h3 class="section-title"><i class="fas fa-list-check" style="margin-left:8px;color:var(--primary)"></i>جدول الأعمال</h3>
                 <div id="upcoming-events-list" class="upcoming-events-list">
                     <p class="empty-upcoming">لا توجد أحداث قادمة. اضغط على أي يوم لإضافة حدث جديد.</p>
                 </div>
@@ -181,7 +180,7 @@ export const templates = {
     <div class="page-section animate-fade">
             <div class="page-header sticky-header">
                 <div>
-                    <h1><i class="fas fa-play-circle" style="margin-left:10px;color:var(--primary-green)"></i>المقاطع والمرئيات</h1>
+                    <h1><i class="fas fa-play-circle" style="margin-left:10px;color:var(--primary)"></i>المقاطع والمرئيات</h1>
                     <p style="margin-top:4px">آخر المقاطع المنشورة. اضغط لمشاهدة المقطع.</p>
                 </div>
                 <div class="header-actions">
@@ -213,7 +212,7 @@ export const templates = {
     <div class="page-section animate-fade links-section" id="links-section-container">
         <div class="page-header sticky-header">
             <div>
-                <h1><i class="fas fa-compass" style="margin-left:10px;color:var(--primary-green)"></i>روابط تهمنا</h1>
+                <h1><i class="fas fa-compass" style="margin-left:10px;color:var(--primary)"></i>روابط تهمنا</h1>
                 <p style="margin-top:4px">مجموعة من المواقع والمنصات المفيدة لأعضاء الكشافة.</p>
             </div>
             <div class="header-actions">
@@ -312,7 +311,7 @@ export const templates = {
     <div class="page-section animate-fade">
             <div class="page-header sticky-header">
                 <div>
-                    <h1><i class="fas fa-file-pdf" style="margin-left:10px;color:var(--primary-green)"></i>التقارير</h1>
+                    <h1><i class="fas fa-file-pdf" style="margin-left:10px;color:var(--primary)"></i>التقارير</h1>
                     <p style="margin-top:4px">عرض وتحميل تقارير الفرقة بصيغة PDF.</p>
                 </div>
                 <div class="header-actions">
@@ -330,7 +329,7 @@ export const templates = {
     <div class="page-section animate-fade">
             <div class="page-header sticky-header">
                 <div>
-                    <h1><i class="fas fa-users" style="margin-left:10px;color:var(--primary-green)"></i>الطلاب</h1>
+                    <h1><i class="fas fa-users" style="margin-left:10px;color:var(--primary)"></i>الطلاب</h1>
                 </div>
                 <div class="header-actions">
                     <a href="https://docs.google.com/document/d/${CONFIG.STUDENTS_DOC_ID}/edit" target="_blank" class="glass-btn" title="فتح المستند الأصلي">
@@ -367,13 +366,20 @@ export const templates = {
     <div class="page-section animate-fade" >
             <div class="page-header sticky-header">
                 <div>
-                    <h1><i class="fas fa-users" style="margin-left:10px;color:var(--primary-green)"></i>الطلاب</h1>
-                    <p style="margin-top:4px">بيان بأسماء الفرقة الكشفية. المزامنة مفعلة مع Google Docs.</p>
+                    <h1><i class="fas fa-users" style="margin-left:10px;color:var(--primary)"></i>الطلاب</h1>
+                    <p style="margin-top:4px">بيان بأسماء الفرقة الكشفية. المزامنة مفعلة مع Supabase.</p>
                 </div>
                 <div class="header-actions">
                     <a href="https://docs.google.com/document/d/${CONFIG.STUDENTS_DOC_ID}/edit" target="_blank" class="glass-btn" title="فتح المستند الأصلي">
                         <i class="fas fa-file-word"></i> <span>فتح الملف</span>
                     </a>
+                    <button id="students-unlock-btn" class="glass-btn" title="فك القفل" onclick="window.openPasswordPopup()">
+                        <i class="fas fa-lock"></i> <span>فك القفل</span>
+                    </button>
+                    <button id="sync-students" class="btn-sync glass-btn" title="مزامنة مع Supabase" onclick="window.syncStudentsToSupabase()">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        <span>رفع البيانات</span>
+                    </button>
                     <button id="refresh-students" class="btn-refresh glass-btn" title="تحديث البيانات">
                         <i class="fas fa-sync-alt"></i>
                         <span>تحديث</span>
@@ -381,7 +387,7 @@ export const templates = {
                 </div>
             </div>
 
-            <div class="students-toolbar">
+            <div class="students-toolbar glass-card p-4" style="margin-bottom: 24px;">
                 <div class="students-search-box">
                     <i class="fas fa-search"></i>
                     <!-- Anti-autofill measures -->
@@ -393,7 +399,7 @@ export const templates = {
                 </div>
             </div>
 
-            <div class="students-table-wrapper">
+            <div class="students-table-wrapper glass-card">
                 <table class="students-table">
                     <thead>
                         <tr>
@@ -424,7 +430,7 @@ export const templates = {
     <div class="page-section animate-fade tasks-board-page">
                 <div class="page-header sticky-header">
                     <div>
-                        <h1><i class="fas fa-tasks" style="margin-left:10px;color:var(--primary-green)"></i>لوحة المهام والملاحظات</h1>
+                        <h1><i class="fas fa-tasks" style="margin-left:10px;color:var(--primary)"></i>لوحة المهام والملاحظات</h1>
                         <p style="margin-top:4px">إدارة شاملة لجميع أفكارك ومسؤولياتك الكشفية.</p>
                     </div>
                 </div>
@@ -456,7 +462,6 @@ export const templates = {
                                         <div class="task-check" onclick="window.toggleTaskItem(${t.id})"><i class="fas fa-check"></i></div>
                                         <div class="task-info">
                                             <div class="task-text">${t.text}</div>
-                                            ${t.reminderTime ? `<div class="task-due-time"><i class="fas fa-clock"></i> ${new Date(t.reminderTime).toLocaleString('ar-EG', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>` : ''}
                                         </div>
                                         <div class="task-del" onclick="window.deleteTaskItem(${t.id})"><i class="fas fa-times"></i></div>
                                     </div>
@@ -472,7 +477,6 @@ export const templates = {
                                             <div class="task-check active" onclick="window.toggleTaskItem(${t.id})"><i class="fas fa-check"></i></div>
                                             <div class="task-info">
                                                 <div class="task-text">${t.text}</div>
-                                                ${t.reminderTime ? `<div class="task-due-time"><i class="fas fa-clock"></i> ${new Date(t.reminderTime).toLocaleString('ar-EG', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>` : ''}
                                             </div>
                                             <div class="task-del" onclick="window.deleteTaskItem(${t.id})"><i class="fas fa-times"></i></div>
                                         </div>
@@ -484,6 +488,186 @@ export const templates = {
                 </div>
             </div>
     `;
+    },
+
+    attendance: () => `
+        <div class="page-section animate-fade">
+            <div class="page-header sticky-header">
+                <div>
+                    <h1><i class="fas fa-clipboard-check" style="margin-left:10px;color:var(--primary)"></i>بوابة التحضير الذكي</h1>
+                    <p style="margin-top:4px">نظام تحضير الطلاب المتطور عبر NFC والتحقق الرقمي.</p>
+                </div>
+            </div>
+
+            <div class="glass-card p-10 text-center animate-in" style="max-width: 600px; margin: 40px auto;">
+                <div class="card-icon blue" style="width: 80px; height: 80px; font-size: 2.5rem; margin: 0 auto 24px;">
+                    <i class="fas fa-microchip"></i>
+                </div>
+                <h2 style="font-size: 1.8rem; margin-bottom: 16px;">نظام ScoutLog الموحد</h2>
+                <p style="opacity: 0.8; line-height: 1.8; margin-bottom: 32px;">
+                    أهلاً بك في نظام التحضير الذكي. يمكنك الآن إدارة حضور وانصراف الطلاب، متابعة الإحصائيات الفورية، وتصدير التقارير بضغطة زر.
+                </p>
+                
+                <div style="display: flex; gap: 16px; justify-content: center;">
+                    <a href="ScoutLog/log.html" class="btn-premium-save" style="text-decoration: none; padding: 15px 40px;">
+                        <i class="fas fa-external-link-alt"></i>
+                        <span>دخول النظام الآن</span>
+                    </a>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6" style="margin-top: 40px;">
+                <div class="glass-card p-6 text-center">
+                    <i class="fas fa-wifi" style="font-size: 1.5rem; color: var(--primary); margin-bottom: 12px;"></i>
+                    <h4 style="margin-bottom: 8px;">مزامنة سحابية</h4>
+                    <p style="font-size: 0.8rem; opacity: 0.7;">تحديث فوري للبيانات مع قاعدة بيانات Supabase.</p>
+                </div>
+                <div class="glass-card p-6 text-center">
+                    <i class="fas fa-print" style="font-size: 1.5rem; color: var(--primary); margin-bottom: 12px;"></i>
+                    <h4 style="margin-bottom: 8px;">تقارير ذكية</h4>
+                    <p style="font-size: 0.8rem; opacity: 0.7;">استخراج تقارير الحضور بصيغة PDF و Excel.</p>
+                </div>
+                <div class="glass-card p-6 text-center">
+                    <i class="fas fa-shield-alt" style="font-size: 1.5rem; color: var(--primary); margin-bottom: 12px;"></i>
+                    <h4 style="margin-bottom: 8px;">أمان عالي</h4>
+                    <p style="font-size: 0.8rem; opacity: 0.7;">تشفير كامل لبيانات الطلاب وعمليات التحضير.</p>
+                </div>
+            </div>
+        </div>
+    `,
+
+    settings: () => {
+        const admin = JSON.parse(localStorage.getItem('admin_session') || '{}');
+        return `
+        <div class="page-section animate-fade">
+            <div class="page-header sticky-header">
+                <div>
+                    <h1><i class="fas fa-cog" style="margin-left:10px;color:var(--primary)"></i>إعدادات النظام</h1>
+                    <p style="margin-top:4px">تحكم في حسابك، أضف مسؤولين جدد، وخصص تجربتك.</p>
+                </div>
+            </div>
+
+            <div class="settings-container">
+                <!-- Left Column: Profile & Security -->
+                <div class="settings-column">
+                    <!-- User Profile Info -->
+                    <div class="glass-card settings-card animate-in">
+                        <div class="card-header-premium">
+                            <i class="fas fa-user-circle"></i>
+                            <h3>الملف الشخصي</h3>
+                        </div>
+                        <div class="admin-profile-compact">
+                            <div class="admin-avatar-premium">
+                                <i class="fas fa-user-shield"></i>
+                            </div>
+                            <div class="admin-info-text">
+                                <h4>${admin.full_name || 'مسؤول النظام'}</h4>
+                                <p>${admin.email || '---'}</p>
+                            </div>
+                        </div>
+                        <div class="settings-actions">
+                            <button class="logout-btn-premium" onclick="window.logout()">
+                                <i class="fas fa-sign-out-alt"></i>
+                                <span>تسجيل الخروج</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Security Settings -->
+                    <div class="glass-card settings-card animate-in" style="animation-delay: 0.1s">
+                        <div class="card-header-premium">
+                            <i class="fas fa-shield-halved"></i>
+                            <h3>الأمان والخصوصية</h3>
+                        </div>
+                        <div class="setting-item-premium">
+                            <div class="setting-text">
+                                <span>القفل الحيوي (البصمة)</span>
+                                <p>طلب البصمة عند فتح البيانات الحساسة أو تسجيل الدخول.</p>
+                            </div>
+                            <label class="switch-premium">
+                                <input type="checkbox" id="setting-biometric-toggle" ${localStorage.getItem('scout-pulse-biometric-enabled') === 'true' ? 'checked' : ''} onchange="window.toggleBiometricLock(this)">
+                                <span class="slider-premium"></span>
+                            </label>
+                        </div>
+                        <div class="setting-item-premium">
+                            <div class="setting-text">
+                                <span>تشفير البيانات</span>
+                                <p>حماية كافة الاتصالات مع قاعدة بيانات Supabase.</p>
+                            </div>
+                            <div class="status-badge success">نشط</div>
+                        </div>
+                    </div>
+
+                    <!-- PIN Access Management -->
+                    <div class="glass-card settings-card animate-in" style="animation-delay: 0.15s">
+                        <div class="card-header-premium">
+                            <i class="fas fa-key"></i>
+                            <h3>الرقم السري للعبور (PIN)</h3>
+                        </div>
+                        <div class="setting-item-premium">
+                            <div class="setting-text">
+                                <span>حماية الحساب برقم سري</span>
+                                <p>استخدم رقم سري مكون من 4 أرقام للدخول السريع بدلاً من البريد.</p>
+                            </div>
+                            <button class="btn-outline-premium" onclick="window.requestPinChange()">
+                                ${admin.pin ? 'تغيير الرقم السري' : 'تعيين رقم سري'}
+                            </button>
+                        </div>
+                        <p class="settings-hint-text"><i class="fas fa-info-circle"></i> سيصلك كود تحقق على بريدك الإلكتروني لتأكيد هذه الخطوة.</p>
+                    </div>
+                </div>
+
+                <!-- Right Column: Admin Management -->
+                <div class="settings-column">
+                    <div class="glass-card settings-card animate-in" style="animation-delay: 0.2s">
+                        <div class="card-header-premium">
+                            <i class="fas fa-user-plus"></i>
+                            <h3>إدارة المسؤولين</h3>
+                        </div>
+                        <p class="settings-hint-text">يمكنك إضافة زملاء لمشاركتك في إدارة المحتوى والطلاب.</p>
+                        <div class="admin-add-form-premium">
+                            <div class="premium-input-group">
+                                <label><i class="fas fa-user"></i> الاسم الكامل</label>
+                                <input type="text" id="new-admin-name" placeholder="مثال: القائد محمد">
+                            </div>
+                            <div class="premium-input-group">
+                                <label><i class="fas fa-envelope"></i> البريد الإلكتروني</label>
+                                <input type="email" id="new-admin-email" placeholder="example@gmail.com">
+                            </div>
+                            <button class="btn-premium-save" onclick="window.addNewAdmin()">
+                                <i class="fas fa-plus-circle"></i>
+                                <span>إضافة كمسؤول معتمد</span>
+                            </button>
+                        </div>
+                        
+                        <div class="admins-list-header" style="margin-top: 30px; margin-bottom: 15px; border-top: 1px solid var(--glass-border); padding-top: 20px;">
+                            <h4 style="font-size: 0.95rem; font-weight: 800;"><i class="fas fa-users-cog" style="margin-left: 8px; color: var(--primary-light);"></i> المسؤولون المضافون</h4>
+                        </div>
+                        <div id="admins-list-container" class="admins-list-premium">
+                            <!-- Loaded via window.renderAdminsList -->
+                        </div>
+                    </div>
+
+                    <div class="glass-card settings-card animate-in" style="animation-delay: 0.3s">
+                        <div class="card-header-premium">
+                            <i class="fas fa-database"></i>
+                            <h3>معلومات النظام</h3>
+                        </div>
+                        <div class="system-stats-compact">
+                            <div class="sys-stat">
+                                <span>الإصدار</span>
+                                <strong>V 6.5.2</strong>
+                            </div>
+                            <div class="sys-stat">
+                                <span>آخر مزامنة</span>
+                                <strong>الآن</strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        `;
     }
 }
 
@@ -496,7 +680,7 @@ export function buildFileItem(file) {
     if (state.docsViewMode === 'grid') {
         const thumb = file.thumbnailLink ? file.thumbnailLink.replace('=s220', '=s400') : null;
         return `
-    <div class="doc-card animate-in" data-id="${file.id}" data-mime="${file.mimeType}" data-url="${openUrl}">
+    <div class="doc-card glass-card animate-in" data-id="${file.id}" data-mime="${file.mimeType}" data-url="${openUrl}">
                 <div class="doc-card-thumb ${type}">
                     ${thumb ? `<img src="${thumb}" loading="lazy">` : `<i class="${icon}"></i>`}
                     <div class="doc-card-type-icon">${typeName}</div>
@@ -513,7 +697,7 @@ export function buildFileItem(file) {
     }
 
     return `
-    <div class="doc-item animate-in" data-id="${file.id}" data-mime="${file.mimeType}" data-url="${openUrl}">
+    <div class="doc-item glass-card animate-in" data-id="${file.id}" data-mime="${file.mimeType}" data-url="${openUrl}">
             <div class="doc-icon ${type}"><i class="${icon}"></i></div>
             <div class="doc-info">
                 <h4>${file.name}</h4>
@@ -536,7 +720,7 @@ export function buildYouTubeVideoCard(video) {
         url: `https://www.youtube.com/watch?v=${video.id}`
     };
     return `
-        <div class="video-card animate-in" data-video-id="${video.id}" data-item='${JSON.stringify(trackingItem).replace(/"/g, '&quot;')}'>
+        <div class="video-card glass-card animate-in" data-video-id="${video.id}" data-item='${JSON.stringify(trackingItem).replace(/"/g, '&quot;')}'>
             <div class="thumb-container">
                 <img class="thumb" src="${video.thumbnail}" alt="${video.title}" loading="lazy" onerror="this.outerHTML='<div class=thumb-placeholder><i class=fas fa-play-circle></i></div>'">
                 <a href="https://www.youtube.com/watch?v=${video.id}" target="_blank" class="yt-open-btn" onclick="event.stopPropagation()" title="فتح في يوتيوب">
@@ -552,3 +736,26 @@ export function buildYouTubeVideoCard(video) {
         </div>
     `;
 }
+window.renderAdminsList = async function() {
+    const container = document.getElementById('admins-list-container');
+    if (!container) return;
+    
+    container.innerHTML = '<div style="padding: 20px; text-align: center; opacity: 0.6; font-size: 0.8rem">جاري تحميل المسؤولين...</div>';
+    
+    const admins = await window.fetchAdmins();
+    
+    if (!admins || admins.length === 0) {
+        container.innerHTML = '<p style="padding: 20px; text-align: center; opacity: 0.5; font-size: 0.85rem">لا يوجد مسؤولون مضافون حالياً.</p>';
+        return;
+    }
+    
+    container.innerHTML = admins.map(admin => `
+        <div class="admin-item-premium animate-in">
+            <div class="admin-item-icon"><i class="fas fa-user-shield"></i></div>
+            <div class="admin-item-info">
+                <strong>${admin.full_name}</strong>
+                <span>${admin.email}</span>
+            </div>
+        </div>
+    `).join('');
+};

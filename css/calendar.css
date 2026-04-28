@@ -2,11 +2,11 @@
 
 /* Main Wrapper — clean white card */
 .calendar-wrapper {
-    background: var(--white);
+    background: var(--bg-darker);
     border-radius: var(--radius-lg);
-    border: 1px solid var(--border-light);
-    box-shadow: var(--shadow-soft);
-    padding: 24px 20px;
+    border: 1.5px solid var(--glass-border);
+    box-shadow: var(--shadow-card);
+    padding: 28px 24px;
 }
 
 /* Month Header */
@@ -29,7 +29,7 @@
     height: 34px;
     border-radius: 50%;
     border: none;
-    background: var(--off-white);
+    background: var(--glass-bg-strong);
     cursor: pointer;
     transition: all 0.25s;
     font-size: 0.8rem;
@@ -40,9 +40,9 @@
 }
 
 .cal-btn:hover {
-    background: var(--primary-green);
+    background: var(--primary);
     color: #fff;
-    box-shadow: 0 3px 10px rgba(46, 125, 50, 0.25);
+    box-shadow: 0 3px 10px var(--primary-glow);
 }
 
 /* Day Names Row — matching mockup exactly */
@@ -82,28 +82,28 @@
 .cal-day span {
     font-size: 0.82rem;
     font-weight: 700;
-    color: #555;
+    color: var(--text-primary);
     z-index: 2;
 }
 
 .cal-day:hover {
-    background: #f0f0f0;
+    background: var(--glass-bg-strong);
 }
 
 /* Today — soft green circle (like day 14 in mockup) */
 .cal-day.today {
-    background: rgba(46, 125, 50, 0.12);
+    background: var(--primary-glow);
 }
 
 .cal-day.today>span {
-    color: var(--primary-green);
+    color: var(--primary-light);
     font-weight: 800;
 }
 
 /* Selected Day — dark green circle (like day 22 in mockup) */
 .cal-day.selected {
-    background: var(--primary-green-dark) !important;
-    box-shadow: 0 3px 12px rgba(27, 94, 32, 0.35);
+    background: var(--primary) !important;
+    box-shadow: 0 3px 12px var(--primary-glow);
     transform: scale(1.05);
     z-index: 5;
 }
@@ -130,7 +130,7 @@
     transform: translateX(-50%);
     width: 4px;
     height: 4px;
-    background: var(--primary-green);
+    background: var(--primary);
     border-radius: 50%;
 }
 
@@ -152,7 +152,7 @@
     overflow: hidden;
     display: none;
     animation: slideUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    background: var(--white);
+    background: var(--glass-bg);
     border: 1.5px solid var(--glass-border);
     box-shadow: var(--shadow-card);
 }
@@ -162,8 +162,8 @@
 }
 
 .day-detail-hero.modern-card {
-    background: rgba(46, 125, 50, 0.2);
-    /* Darker Glassy Green base */
+    background: rgba(99, 102, 241, 0.2);
+    /* Darker Glassy Indigo base */
     backdrop-filter: blur(30px);
     -webkit-backdrop-filter: blur(30px);
     padding: 24px 20px;
@@ -186,8 +186,8 @@
     background: repeating-linear-gradient(45deg,
             transparent,
             transparent 8px,
-            var(--brown) 8px,
-            var(--brown) 9px);
+            var(--primary) 8px,
+            var(--primary) 9px);
     pointer-events: none;
     mask-image: radial-gradient(circle, black, transparent 70%);
 }
@@ -209,7 +209,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #006C35;
+    color: var(--primary);
     font-size: 1.2rem;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
     backdrop-filter: blur(5px);
@@ -236,8 +236,7 @@
 
 .day-detail-hero.modern-card .day-detail-title {
     font-size: 1.6rem;
-    font-weight: 800;
-    color: #006C35;
+    color: var(--primary);
     margin-bottom: 8px;
     display: flex;
     align-items: center;
@@ -272,7 +271,7 @@
     border-top: 1px solid var(--border-light);
     display: flex;
     justify-content: flex-end;
-    background: var(--off-white);
+    background: var(--bg-dark);
 }
 
 /* ===== Agenda Section — matches mockup (جدول الأعمال) ===== */
@@ -315,9 +314,9 @@
     color: var(--text-muted);
     font-size: 0.85rem;
     padding: 30px 20px;
-    background: var(--white);
+    background: var(--glass-bg);
     border-radius: 18px;
-    border: 1px solid var(--border-light);
+    border: 1px solid var(--glass-border);
 }
 
 /* Agenda Event Card — white rounded card with icon (mockup style) */
@@ -326,11 +325,11 @@
     align-items: center;
     gap: 14px;
     padding: 14px 18px;
-    background: var(--white);
+    background: var(--glass-bg);
     border-radius: 18px;
-    border: 1px solid var(--border-light);
+    border: 1px solid var(--glass-border);
     transition: all 0.2s;
-    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.03);
+    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.2);
 }
 
 .upcoming-event-item:hover {
@@ -339,8 +338,8 @@
 }
 
 .upcoming-event-item.today {
-    border-right: 3px solid var(--primary-green);
-    background: rgba(46, 125, 50, 0.03);
+    border-right: 3px solid var(--primary);
+    background: var(--primary-glow);
 }
 
 .upcoming-event-icon {
@@ -352,11 +351,11 @@
     justify-content: center;
     font-size: 1rem;
     flex-shrink: 0;
-    background: rgba(46, 125, 50, 0.15);
-    color: var(--primary-green);
+    background: rgba(99, 102, 241, 0.15);
+    color: var(--primary);
     backdrop-filter: blur(4px);
     -webkit-backdrop-filter: blur(4px);
-    box-shadow: 0 4px 10px rgba(46, 125, 50, 0.2);
+    box-shadow: 0 4px 10px rgba(99, 102, 241, 0.2);
 }
 
 .upcoming-event-date {
@@ -370,7 +369,7 @@
 .upcoming-day-num {
     font-size: 1.3rem;
     font-weight: 900;
-    color: var(--primary-green);
+    color: var(--primary);
     line-height: 1;
 }
 
@@ -422,14 +421,14 @@
 }
 
 .custom-modal .modal-content {
-    background: var(--white);
+    background: var(--bg-dark);
     backdrop-filter: blur(30px);
     border-radius: var(--radius-lg);
     padding: 28px;
     width: 440px;
     max-width: 92vw;
-    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.15);
-    border: 1px solid var(--border-light);
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.4);
+    border: 1px solid var(--glass-border);
 }
 
 .custom-modal .modal-header {
@@ -442,7 +441,7 @@
 .custom-modal .modal-header h3 {
     font-size: 1.1rem;
     font-weight: 800;
-    color: var(--primary-green-dark);
+    color: var(--primary-light);
 }
 
 .custom-modal .close-modal {
@@ -467,14 +466,14 @@
     resize: vertical;
     margin-bottom: 14px;
     transition: 0.2s;
-    background: var(--off-white);
+    background: var(--bg-darker);
 }
 
 .custom-modal textarea:focus {
     outline: none;
-    border-color: var(--primary-green);
-    background: var(--white);
-    box-shadow: 0 0 0 3px rgba(46, 125, 50, 0.12);
+    border-color: var(--primary);
+    background: var(--bg-dark);
+    box-shadow: 0 0 0 3px var(--primary-glow);
 }
 
 .btn-primary {
@@ -489,13 +488,13 @@
     cursor: pointer;
     transition: all 0.25s;
     font-family: inherit;
-    box-shadow: 0 4px 12px rgba(46, 125, 50, 0.2);
+    box-shadow: 0 4px 12px var(--primary-glow);
 }
 
 .btn-primary:hover {
-    background: var(--primary-green-dark);
+    background: var(--primary-dark);
     transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(46, 125, 50, 0.3);
+    box-shadow: 0 8px 20px var(--primary-glow);
 }
 
 /* ===== Students Section ===== */
@@ -542,7 +541,7 @@
     padding: 12px 42px 12px 18px;
     border: 1px solid var(--border-light);
     border-radius: var(--radius-md);
-    background: var(--white);
+    background: var(--glass-bg);
     font-size: 0.95rem;
     font-family: inherit;
     transition: 0.25s;
@@ -550,8 +549,8 @@
 
 .students-search-box input:focus {
     outline: none;
-    border-color: var(--primary-green);
-    box-shadow: 0 0 0 4px rgba(46, 125, 50, 0.08);
+    border-color: var(--primary);
+    box-shadow: 0 0 0 4px var(--primary-glow);
 }
 
 span.blurred {
@@ -573,7 +572,7 @@ span.blurred {
 }
 
 .student-row:hover {
-    background: rgba(46, 125, 50, 0.04);
+    background: var(--primary-glow);
 }
 
 /* Password Modal */
@@ -595,7 +594,7 @@ span.blurred {
 
 .password-popup-content {
     position: relative;
-    background: var(--white);
+    background: var(--bg-dark);
     border-radius: var(--radius-lg);
     padding: 32px;
     width: 400px;
@@ -606,7 +605,7 @@ span.blurred {
 
 .password-popup-icon {
     font-size: 3rem;
-    color: var(--primary-green);
+    color: var(--primary);
     margin-bottom: 16px;
     animation: h-pulse 2s infinite;
 }
@@ -643,6 +642,8 @@ span.blurred {
     padding: 12px 18px;
     border: 1px solid var(--border-light);
     border-radius: var(--radius-md);
+    background: var(--bg-darker);
+    color: white;
     font-size: 1rem;
     font-family: inherit;
     width: 220px;
@@ -652,13 +653,13 @@ span.blurred {
 
 .lock-form input:focus {
     outline: none;
-    border-color: var(--primary-green);
-    box-shadow: 0 0 0 3px rgba(46, 125, 50, 0.12);
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px var(--primary-glow);
 }
 
 .lock-form button {
     padding: 12px 24px;
-    background: var(--primary-green);
+    background: var(--primary);
     color: white;
     border: none;
     border-radius: var(--radius-md);
@@ -670,8 +671,8 @@ span.blurred {
 }
 
 .lock-form button:hover {
-    background: var(--primary-green-dark);
-    box-shadow: 0 4px 14px rgba(46, 125, 50, 0.3);
+    background: var(--primary-dark);
+    box-shadow: 0 4px 14px var(--primary-glow);
 }
 
 .lock-error {
@@ -684,21 +685,17 @@ span.blurred {
 
 .students-table-wrapper {
     overflow-x: auto;
+    padding: 0;
 }
 
 .students-table {
     width: 100%;
-    border-collapse: separate;
-    border-spacing: 0;
-    background: var(--white);
-    border-radius: var(--radius-lg);
-    overflow: hidden;
-    border: 1px solid var(--border-light);
-    box-shadow: var(--shadow-soft);
+    border-collapse: collapse;
+    background: transparent;
 }
 
 .students-table thead {
-    background: linear-gradient(135deg, var(--primary-green), var(--primary-green-dark));
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
 }
 
 .students-table thead th {
@@ -714,19 +711,28 @@ span.blurred {
     transition: 0.2s;
 }
 
+.students-table tbody tr {
+    transition: all var(--speed);
+    border-bottom: 1px solid var(--glass-border);
+}
+
+.students-table tbody tr:last-child {
+    border-bottom: none;
+}
+
 .students-table tbody tr:nth-child(even) {
-    background: var(--off-white);
+    background: rgba(255, 255, 255, 0.01);
 }
 
 .students-table tbody tr:hover {
-    background: rgba(46, 125, 50, 0.04);
+    background: var(--glass-bg-strong);
 }
 
 .students-table tbody td {
-    padding: 12px 18px;
-    font-size: 0.85rem;
+    padding: 16px 20px;
+    font-size: 0.9rem;
     font-weight: 600;
-    border-bottom: 1px solid var(--border-light);
+    color: var(--text-primary);
     white-space: nowrap;
 }
 
@@ -735,7 +741,7 @@ span.blurred {
     align-items: center;
     gap: 6px;
     background: rgba(46, 125, 50, 0.08);
-    color: var(--primary-green-dark);
+    color: var(--primary-light);
     padding: 6px 14px;
     border-radius: 20px;
     font-size: 0.82rem;
@@ -749,13 +755,13 @@ span.blurred {
     bottom: 30px;
     left: 50%;
     transform: translateX(-50%) translateY(100px);
-    background: var(--primary-green);
+    background: var(--primary);
     color: white;
     padding: 12px 24px;
     border-radius: 30px;
     font-weight: 700;
     font-size: 0.9rem;
-    box-shadow: 0 10px 30px rgba(46, 125, 50, 0.3);
+    box-shadow: 0 10px 30px var(--primary-glow);
     z-index: 10001;
     transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     opacity: 0;
@@ -784,10 +790,10 @@ span.blurred {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: var(--white);
+    background: var(--glass-bg);
     padding: 16px 24px;
     border-radius: var(--radius-lg);
-    border: 1px solid var(--border-light);
+    border: 1px solid var(--glass-border);
     margin-bottom: 24px;
     position: relative;
     z-index: 100;
@@ -799,9 +805,9 @@ span.blurred {
     align-items: center;
     gap: 10px;
     padding: 10px 20px;
-    background: rgba(46, 125, 50, 0.06);
-    color: var(--primary-green-dark);
-    border: 1px solid rgba(46, 125, 50, 0.12);
+    background: var(--glass-bg-strong);
+    color: var(--primary-light);
+    border: 1px solid var(--glass-border);
     border-radius: 50px;
     font-size: 0.85rem;
     font-weight: 700;
@@ -816,11 +822,11 @@ span.blurred {
 }
 
 .glass-btn:hover {
-    background: var(--primary-green);
+    background: var(--primary);
     color: white;
-    border-color: var(--primary-green);
+    border-color: var(--primary);
     transform: translateY(-2px);
-    box-shadow: 0 6px 18px rgba(46, 125, 50, 0.2);
+    box-shadow: 0 6px 18px var(--primary-glow);
 }
 
 .glass-btn:hover i {
@@ -894,4 +900,25 @@ span.blurred {
     .page-header p {
         font-size: 0.8rem;
     }
+}
+.day-detail-edit-btn {
+    margin-top: 16px;
+    padding: 10px 16px;
+    background: var(--primary);
+    border: none;
+    border-radius: 12px;
+    color: white;
+    font-weight: 700;
+    font-size: 0.85rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.3s;
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+}
+
+.day-detail-edit-btn:hover {
+    transform: translateY(-2px);
+    background: var(--primary-dark);
 }

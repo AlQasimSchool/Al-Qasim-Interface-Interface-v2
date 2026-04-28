@@ -70,6 +70,7 @@ function deleteTask(id) {
 function renderSidebarTasks() {
     const notesGrid = document.getElementById('sidebar-notes-grid');
     const tasksList = document.getElementById('sidebar-tasks-list');
+    
     if (!notesGrid || !tasksList) return;
 
     const allItems = getTasks();
@@ -658,7 +659,8 @@ function saveCustomLink() {
     const url = document.getElementById('link-url').value;
 
     if (!name || !url) {
-        alert('يرجى ملء جميع الحقول');
+        if (window.showAlert) window.showAlert('تنبيه', 'يرجى ملء جميع الحقول', 'fa-exclamation-circle');
+        else alert('يرجى ملء جميع الحقول');
         return;
     }
 
@@ -981,6 +983,8 @@ function navigateTo(pageId) {
             renderLinks();
         } else if (pageId === 'calendar') {
             initCalendar();
+        } else if (pageId === 'settings') {
+            if (window.renderAdminsList) window.renderAdminsList();
         }
     }, 150);
 }
@@ -1009,6 +1013,15 @@ async function loadDashboardStats() {
         const videos = await fetchYouTubeVideos();
         updateVideoStat(videos.length);
     } catch (e) { /* silently fail */ }
+
+    // Update Sidebar Footer Info
+    const adminSession = JSON.parse(localStorage.getItem('admin_session') || '{}');
+    if (adminSession.full_name) {
+        const nameEl = document.getElementById('sidebar-admin-name');
+        const avatarEl = document.getElementById('sidebar-admin-avatar');
+        if (nameEl) nameEl.textContent = adminSession.full_name;
+        if (avatarEl) avatarEl.textContent = adminSession.full_name.charAt(0);
+    }
 }
 
 // ─── Calendar Logic ─────────────────────────────────

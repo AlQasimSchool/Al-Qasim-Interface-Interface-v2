@@ -4,24 +4,151 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Al-Qasim PC Interface</title>
+    <title>Al-Qasim Interface</title>
     <meta name="description" content="واجهة إدارة مركزية لمجموعة الكشافة — مستندات، مقاطع، روابط مفيدة">
 
     <link rel="icon" href="ico.png" type="image/png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <!-- Modular Styles -->
-    <link rel="stylesheet" href="css/base.css?v=6.1">
-    <link rel="stylesheet" href="css/layout.css?v=6.1">
-    <link rel="stylesheet" href="css/components.css?v=6.1">
-    <link rel="stylesheet" href="css/utilities.css?v=6.1">
-    <link rel="stylesheet" href="css/calendar.css?v=6.1">
-    <link rel="stylesheet" href="css/media.css?v=6.1">
-    <link rel="stylesheet" href="css/docs.css?v=6.1">
+    <link rel="stylesheet" href="css/base.css?v=6.2">
+    <link rel="stylesheet" href="css/layout.css?v=6.2">
+    <link rel="stylesheet" href="css/components.css?v=6.2">
+    <link rel="stylesheet" href="css/utilities.css?v=6.2">
+    <link rel="stylesheet" href="css/calendar.css?v=6.2">
+    <link rel="stylesheet" href="css/media.css?v=6.2">
+    <link rel="stylesheet" href="css/docs.css?v=6.2">
+
+    <!-- Supabase CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Unified Auth System -->
+    <script src="js/auth-unified.js?v=2.0" defer></script>
 </head>
 
 <body>
-    <!-- Global Decorations -->
+    <!-- Authentication Overlay (Unified) -->
+    <!-- Authentication Overlay (Unified) -->
+    <div id="authOverlay" class="auth-overlay">
+        <div class="auth-card animate-in">
+            <div class="auth-header">
+                <div class="auth-shield-box">
+                    <i class="fas fa-user-shield"></i>
+                </div>
+                <h2 class="auth-title">نظام الدخول الموحد</h2>
+                <p class="auth-subtitle">يرجى تأكيد هويتك للوصول إلى لوحة التحكم</p>
+            </div>
+
+            <div id="auth-loading-state" class="auth-loading-state">
+                <div class="spinner"></div>
+                <p>جاري التحقق من حالة الاتصال...</p>
+            </div>
+
+            <div id="auth-step-1" class="hidden">
+                <div class="auth-input-group">
+                    <label>البريد الإلكتروني</label>
+                    <div class="input-wrapper">
+                        <input type="email" id="login-email" placeholder="amro.motawa@gmail.com">
+                        <i class="fas fa-envelope input-icon-end"></i>
+                    </div>
+                </div>
+                <button id="sendCodeBtn" class="auth-btn-modern" onclick="sendAuthCode()">
+                    <span>إرسال رمز الدخول السريع</span>
+                    <i class="fas fa-envelope"></i>
+                </button>
+            </div>
+
+            <div id="auth-step-2" class="hidden">
+                <div class="auth-input-group">
+                    <label>رمز التحقق (OTP)</label>
+                    <div class="input-wrapper">
+                        <input type="text" id="login-otp" placeholder="00000000" maxlength="8">
+                        <i class="fas fa-shield-alt input-icon-end"></i>
+                    </div>
+                </div>
+                <div class="auth-actions-row">
+                    <button id="resendCodeBtn" class="resend-btn" onclick="sendAuthCode()">إعادة إرسال الرمز</button>
+                    <button class="back-btn" onclick="resetAuth()">تغيير البريد</button>
+                </div>
+                <button id="verifyBtn" class="auth-btn-modern success" onclick="verifyAuthCode()">
+                    <span>تأكيد الدخول</span>
+                    <i class="fas fa-check-circle"></i>
+                </button>
+            </div>
+
+            <div class="auth-footer">
+                جميع العمليات مراقبة ومسجلة لأغراض أمنية
+            </div>
+        </div>
+    </div>
+
+    <!-- Lock Screen (Biometric / PIN) -->
+    <div id="biometricOverlay" class="biometric-overlay hidden">
+        <div class="bio-card animate-in">
+            <div class="auth-shield-box" style="margin-bottom: 24px;">
+                <i class="fas fa-lock"></i>
+            </div>
+            <h3 class="auth-title" id="bio-admin-greeting" style="font-size: 1.5rem;">التحقق من الهوية</h3>
+            <p class="auth-subtitle" style="margin-bottom: 24px;">أدخل الرقم السري للعبور أو استخدم البصمة</p>
+            
+            <div id="bio-loading-state" class="auth-loading-state hidden">
+                <div class="spinner"></div>
+                <p>جاري التحقق...</p>
+            </div>
+            
+            <div id="bio-content-area">
+                <div class="auth-input-group" style="margin-bottom: 16px;">
+                <div class="input-wrapper">
+                    <input type="password" id="lock-pin" placeholder="الرقم السري" maxlength="4">
+                    <i class="fas fa-key input-icon-end"></i>
+                </div>
+            </div>
+            
+            <div style="display: flex; gap: 10px;">
+                <button class="auth-btn-modern" onclick="verifyPinCode()">
+                    <span>دخول</span>
+                    <i class="fas fa-arrow-left"></i>
+                </button>
+                <button class="auth-btn-modern" style="background: var(--glass-bg); color: var(--text-primary);" onclick="requestBiometricAccess()" id="bio-unlock-btn" title="استخدام البصمة">
+                    <i class="fas fa-fingerprint"></i>
+                </button>
+            </div>
+            </div>
+            
+            <button class="text-btn" style="margin-top: 16px; font-size: 0.85rem; opacity: 0.7;" onclick="window.fallbackToEmail()">
+                الدخول عبر البريد الإلكتروني
+            </button>
+        </div>
+    </div>
+
+    <!-- Unified Prompt Modal (Premium Alternative to prompt/alert) -->
+    <div id="promptModal" class="biometric-overlay hidden">
+        <div class="bio-card animate-in">
+            <div id="prompt-icon-box" class="auth-shield-box" style="margin-bottom: 20px;">
+                <i class="fas fa-shield-alt"></i>
+            </div>
+            <h3 id="prompt-title" class="auth-title">التحقق من الهوية</h3>
+            <p id="prompt-subtitle" class="auth-subtitle">يرجى إدخال البيانات المطلوبة للمتابعة</p>
+            
+            <div class="auth-input-group" style="margin-bottom: 24px;">
+                <div class="input-wrapper">
+                    <input type="text" id="prompt-input" placeholder="----">
+                    <i id="prompt-input-icon" class="fas fa-keyboard input-icon-end"></i>
+                </div>
+            </div>
+            
+            <div style="display: flex; gap: 10px;">
+                <button id="prompt-confirm-btn" class="auth-btn-modern">
+                    <span>تأكيد</span>
+                    <i class="fas fa-check"></i>
+                </button>
+                <button class="auth-btn-modern" style="background: var(--glass-bg); color: var(--text-primary);" onclick="window.closePromptModal()">
+                    <span>إلغاء</span>
+                </button>
+            </div>
+        </div>
+    </div>
 
     <!-- Global Decorations -->
     <div class="islamic-decoration decoration-tr"></div>
@@ -38,7 +165,7 @@
                     <img src="ico.png" alt="Logo" style="width:100%;height:100%;object-fit:contain;">
                 </div>
                 <h2>
-                    Al-Qasim PC Interface
+                    Al-Qasim Interface
                     <small>إدارة المهام والأنشطة الكشفية</small>
                 </h2>
             </div>
@@ -72,39 +199,55 @@
                     <i class="fas fa-calendar-alt"></i>
                     <span>التقويم</span>
                 </a>
+                <a class="nav-item external" href="ScoutLog/log.html">
+                    <i class="fas fa-clipboard-check"></i>
+                    <span>التحضير</span>
+                </a>
+                <a class="nav-item" data-page="settings">
+                    <i class="fas fa-cog"></i>
+                    <span>الإعدادات</span>
+                </a>
+                <div class="sidebar-divider" style="height: 1px; background: var(--glass-border); margin: 10px 0;"></div>
+                <a class="nav-item" id="pin-sidebar-btn" title="تثبيت القائمة">
+                    <i class="fas fa-thumbtack"></i>
+                    <span>تثبيت القائمة</span>
+                </a>
+                <a class="nav-item logout-nav-item" onclick="window.logout()" style="color: #ef4444;">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>تسجيل الخروج</span>
+                </a>
             </nav>
 
             <div class="sidebar-tasks-container">
                 <!-- Tasks will be injected here by tasks.js -->
             </div>
+
+
         </aside>
 
         <!-- ===== Main Content Area ===== -->
         <main class="main">
-            <header class="app-header">
-                <div class="header-left">
-                    <div class="header-logo">
-                        <img src="ico.png" alt="Scouts Logo" style="width: 40px; height: 40px;">
-                    </div>
-                </div>
-
-                <div class="header-search">
-                    <i class="fas fa-search"></i>
-                    <input type="text" id="global-search" placeholder="ابحث عن ملفات، فديوهات، طلاب...">
+            <header class="app-header" style="background: transparent; border: none; box-shadow: none; display: flex; justify-content: space-between; gap: 20px; padding: 0;">
+                <!-- Search Island - Compact -->
+                <div class="header-search" style="width: 250px; background: var(--glass-bg-strong); border: 1px solid var(--glass-border); border-radius: 14px; padding: 8px 16px; display: flex; align-items: center; gap: 10px; backdrop-filter: blur(8px);">
+                    <i class="fas fa-search" style="color: var(--text-secondary); font-size: 0.9rem;"></i>
+                    <input type="text" id="global-search" placeholder="بحث سريع..." style="background: transparent; border: none; outline: none; color: white; width: 100%; font-family: 'Cairo', sans-serif; font-size: 0.85rem;">
                     <div id="search-results" class="search-results-floating"></div>
                 </div>
 
-                <div class="header-right">
-                    <div id="header-weather" class="header-weather">
+                <!-- Info Island - Compact -->
+                <div class="header-right" style="background: var(--glass-bg-strong); border: 1px solid var(--glass-border); border-radius: 14px; padding: 8px 16px; backdrop-filter: blur(8px); display: flex; align-items: center; gap: 12px;">
+                    <a href="ScoutLog/log.html" class="header-attendance-btn" title="الذهاب لصفحة التحضير" style="color: var(--primary-light); cursor: pointer; display: flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 8px; background: rgba(99, 102, 241, 0.1); transition: all 0.2s;">
+                        <i class="fas fa-clipboard-check"></i>
+                    </a>
+                    <div id="header-weather" class="header-weather" style="display: flex; align-items: center; gap: 6px; font-size: 0.85rem;">
                         <!-- Weather injected by weather.js -->
                     </div>
-                    <div class="header-divider"></div>
-                    <div id="header-clock" class="header-clock">
+                    <div style="width: 1px; height: 16px; background: var(--glass-border);"></div>
+                    <div id="header-clock" class="header-clock" style="font-weight: 700; color: var(--primary-light); font-size: 0.9rem; min-width: 80px; text-align: center;">
                         <span class="time">--:--:--</span>
-                        <span class="date">-- --- ----</span>
                     </div>
                 </div>
-
             </header>
 
             <!-- Page Specific Content -->

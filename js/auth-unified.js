@@ -1,0 +1,599 @@
+/**
+ * ScoutLog Unified Authentication System
+ * Handles Email/OTP Login, Session Persistence, and Biometric Security.
+ */
+
+const SUPABASE_URL = 'https://unxhursbcavdaunuvbhr.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVueGh1cnNiY2F2ZGF1bnV2YmhyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY5Mzg4NTksImV4cCI6MjA5MjUxNDg1OX0.56EwISYcShglg-Q_2thnrtJSAXMKkHO1Zmvo_ZC6c4w';
+const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let currentUser = null;
+let tempLoginData = null;
+let resendInterval = null;
+
+// Initialize Auth
+document.addEventListener('DOMContentLoaded', () => {
+    checkSession();
+    
+    // Auto-fill email if remembered
+    const savedEmail = localStorage.getItem('remembered_email');
+    if (savedEmail) {
+        const emailInput = document.getElementById('login-email');
+        if (emailInput) emailInput.value = savedEmail;
+    }
+
+    // Sync Biometric Toggle UI
+    const bioToggle = document.getElementById('biometric-toggle');
+    if (bioToggle) {
+        bioToggle.checked = localStorage.getItem('scout-pulse-biometric-enabled') === 'true';
+    }
+});
+
+async function checkSession() {
+    const authLoading = document.getElementById('auth-loading-state');
+    const authStep1 = document.getElementById('auth-step-1');
+    const bioLoading = document.getElementById('bio-loading-state');
+    const bioContent = document.getElementById('bio-content-area');
+    const authOverlay = document.getElementById('authOverlay');
+    const bioOverlay = document.getElementById('biometricOverlay');
+
+    const session = localStorage.getItem('admin_session');
+    
+    if (session) {
+        currentUser = JSON.parse(session);
+        
+        // Show loading in both potential overlays
+        if (authLoading) authLoading.classList.remove('hidden');
+        if (bioLoading) bioLoading.classList.remove('hidden');
+        if (authStep1) authStep1.classList.add('hidden');
+        if (bioContent) bioContent.classList.add('hidden');
+
+        // Fetch latest data to see if PIN is set
+        try {
+            const { data: admin, error } = await _supabase
+                .from('admins')
+                .select('*')
+                .eq('email', currentUser.email)
+                .single();
+            
+            if (admin) {
+                currentUser = admin;
+                localStorage.setItem('admin_session', JSON.stringify(currentUser));
+            }
+        } catch (e) { console.error("Session sync failed", e); }
+
+        // Personalize Greeting
+        const greetingEl = document.getElementById('bio-admin-greeting');
+        if (greetingEl && currentUser.full_name) {
+            greetingEl.textContent = `مرحباً ${currentUser.full_name.split(' ')[0]}`;
+        }
+
+        // Hide loaders after sync
+        if (authLoading) authLoading.classList.add('hidden');
+        if (bioLoading) bioLoading.classList.add('hidden');
+
+        // If PIN is set, show biometric/PIN overlay
+        if (currentUser.pin) {
+            authOverlay.classList.add('hidden');
+            bioOverlay.classList.remove('hidden');
+            if (bioContent) bioContent.classList.remove('hidden');
+            
+            const isBiometricEnabled = localStorage.getItem('scout-pulse-biometric-enabled') === 'true';
+            if (isBiometricEnabled) {
+                requestBiometricAccess();
+            } else {
+                const bioBtn = document.getElementById('bio-unlock-btn');
+                if (bioBtn) bioBtn.style.display = 'none';
+            }
+        } else {
+            // No PIN set, must use Email OTP
+            bioOverlay.classList.add('hidden');
+            authOverlay.classList.remove('hidden');
+            if (authStep1) authStep1.classList.remove('hidden');
+            // Auto-fill email and show OTP step if they were just here
+            const emailInput = document.getElementById('login-email');
+            if (emailInput) emailInput.value = currentUser.email;
+        }
+    } else {
+        // No session at all
+        if (authLoading) authLoading.classList.add('hidden');
+        authOverlay.classList.remove('hidden');
+        if (authStep1) authStep1.classList.remove('hidden');
+    }
+}
+
+window.verifyPinCode = function() {
+    const pin = document.getElementById('lock-pin').value;
+    
+    if (currentUser && currentUser.pin && pin === currentUser.pin) {
+        document.getElementById('biometricOverlay').classList.add('hidden');
+        showToast("✅ تم التحقق بنجاح", "success");
+        
+        if (window.pendingUnlock === 'students') {
+            window.pendingUnlock = null;
+            if (window.unblurStudentsData) window.unblurStudentsData();
+            import('./state.js').then(({ state }) => state.isStudentsUnlocked = true);
+        } else {
+            if (window.updateGreeting) window.updateGreeting();
+        }
+    } else {
+        showToast("❌ الرقم السري غير صحيح", "error");
+        document.getElementById('lock-pin').value = '';
+    }
+};
+
+window.closePromptModal = function() {
+    document.getElementById('promptModal').classList.add('hidden');
+};
+
+window.showActionPrompt = function(options) {
+    const { title, subtitle, icon, placeholder, type, callback, hideInput } = options;
+    const modal = document.getElementById('promptModal');
+    const input = document.getElementById('prompt-input');
+    const inputGroup = input.closest('.auth-input-group');
+    const confirmBtn = document.getElementById('prompt-confirm-btn');
+    
+    document.getElementById('prompt-title').textContent = title || 'التحقق من الهوية';
+    document.getElementById('prompt-subtitle').textContent = subtitle || '';
+    if (icon) document.getElementById('prompt-icon-box').innerHTML = `<i class="fas ${icon}"></i>`;
+    
+    input.value = '';
+    input.type = type || 'text';
+    input.placeholder = placeholder || '----';
+    
+    if (hideInput) {
+        inputGroup.style.display = 'none';
+    } else {
+        inputGroup.style.display = 'block';
+    }
+    
+    modal.classList.remove('hidden');
+    if (!hideInput) input.focus();
+    
+    confirmBtn.onclick = async () => {
+        const val = input.value.trim();
+        const result = await callback(val);
+        // If result is 'keep-open', we don't close (another modal is likely taking over)
+        if (result !== false && result !== 'keep-open') {
+            window.closePromptModal();
+        }
+    };
+};
+
+window.showAlert = function(title, subtitle, icon = 'fa-info-circle') {
+    window.showActionPrompt({
+        title,
+        subtitle,
+        icon,
+        hideInput: true,
+        callback: () => true
+    });
+};
+
+window.showConfirm = function(title, subtitle, callback) {
+    window.showActionPrompt({
+        title,
+        subtitle,
+        icon: 'fa-question-circle',
+        hideInput: true,
+        callback: () => callback()
+    });
+};
+
+window.requestPinChange = async function() {
+    if (!currentUser) return;
+    
+    showToast("🕒 جاري إرسال كود التحقق لبريدك...", "info");
+    
+    try {
+        const { error } = await _supabase.auth.signInWithOtp({
+            email: currentUser.email
+        });
+        
+        if (error) throw error;
+        
+        // Code sent, now show input immediately
+        window.showActionPrompt({
+            title: "كود التحقق",
+            subtitle: "تم إرسال رمز التحقق لبريدك الإلكتروني، أدخله للمتابعة:",
+            icon: "fa-envelope-open-text",
+            placeholder: "000000",
+            callback: async (otp) => {
+                if (!otp) return false;
+                
+                showToast("🕒 جاري التحقق...", "info");
+                try {
+                    const { error: verifyError } = await _supabase.auth.verifyOtp({
+                        email: currentUser.email,
+                        token: otp,
+                        type: 'email'
+                    });
+                    
+                    if (verifyError) {
+                        showToast("❌ الكود غير صحيح", "error");
+                        return false;
+                    }
+                    
+                    // Code correct, show second modal for new PIN
+                    // Return 'keep-open' so the modal doesn't flicker/close before next one shows
+                    setTimeout(() => {
+                        window.showActionPrompt({
+                            title: "الرقم السري الجديد",
+                            subtitle: "أدخل الرقم السري الجديد المكون من 4 أرقام:",
+                            icon: "fa-key",
+                            placeholder: "0000",
+                            type: "password",
+                            callback: async (newPin) => {
+                                if (!newPin || newPin.length !== 4 || isNaN(newPin)) {
+                                    showToast("⚠️ يجب إدخال 4 أرقام فقط", "error");
+                                    return false;
+                                }
+                                
+                                try {
+                                    const { error: updateError } = await _supabase
+                                        .from('admins')
+                                        .update({ pin: newPin })
+                                        .eq('email', currentUser.email);
+                                        
+                                    if (updateError) throw updateError;
+                                    
+                                    showToast("✅ تم تحديث الرقم السري بنجاح", "success");
+                                    currentUser.pin = newPin;
+                                    localStorage.setItem('admin_session', JSON.stringify(currentUser));
+                                    if (window.showPage) window.showPage('settings');
+                                    return true;
+                                } catch (e) {
+                                    console.error("PIN Update Error:", e);
+                                    showToast("❌ فشل التحديث: " + (e.message || "تأكد من وجود عمود pin في الجدول"), "error");
+                                    return false;
+                                }
+                            }
+                        });
+                    }, 100);
+                    
+                    return 'keep-open'; 
+                } catch (err) {
+                    showToast("❌ " + err.message, "error");
+                    return false;
+                }
+            }
+        });
+        
+    } catch (err) {
+        showToast("❌ " + err.message, "error");
+    }
+};
+
+window.fallbackToEmail = function() {
+    document.getElementById('biometricOverlay').classList.add('hidden');
+    document.getElementById('authOverlay').classList.remove('hidden');
+    document.getElementById('auth-step-1').classList.remove('hidden');
+    document.getElementById('auth-step-2').classList.add('hidden');
+};
+
+async function sendAuthCode() {
+    const emailInput = document.getElementById('login-email');
+    const email = emailInput.value.trim().toLowerCase();
+    const btn = document.getElementById('sendCodeBtn');
+
+    if (!email) {
+        showToast("⚠️ يرجى إدخال البريد الإلكتروني", "error");
+        return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<span>جاري الإرسال...</span> <i class="fas fa-spinner fa-spin"></i>';
+
+    try {
+        // 1. Check if admin exists in database
+        const { data: admin, error: dbError } = await _supabase
+            .from('admins')
+            .select('*')
+            .eq('email', email)
+            .single();
+
+        if (dbError || !admin) {
+            throw new Error("عذراً، هذا البريد غير مسجل كمسؤول.");
+        }
+
+        // 2. Request OTP from Supabase
+        const { error: authError } = await _supabase.auth.signInWithOtp({
+            email: email,
+            options: { shouldCreateUser: true }
+        });
+
+        if (authError) throw authError;
+
+        showToast("✅ تم إرسال رمز التحقق لبريدك الإلكتروني", "success");
+        tempLoginData = admin;
+        
+        document.getElementById('auth-step-1').classList.add('hidden');
+        document.getElementById('auth-step-2').classList.remove('hidden');
+        
+        startResendTimer();
+    } catch (err) {
+        console.error("Auth Error:", err);
+        showToast("❌ " + err.message, "error");
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<span>إرسال رمز الدخول السريع</span> <i class="fas fa-envelope"></i>';
+    }
+}
+
+function startResendTimer() {
+    const resendBtn = document.getElementById('resendCodeBtn');
+    if (!resendBtn) return;
+
+    let seconds = 60;
+    resendBtn.disabled = true;
+    
+    if (resendInterval) clearInterval(resendInterval);
+    
+    resendInterval = setInterval(() => {
+        seconds--;
+        resendBtn.textContent = `إعادة الإرسال خلال (${seconds}ث)`;
+        
+        if (seconds <= 0) {
+            clearInterval(resendInterval);
+            resendBtn.disabled = false;
+            resendBtn.textContent = "إعادة إرسال الرمز";
+        }
+    }, 1000);
+}
+
+async function verifyAuthCode() {
+    const email = document.getElementById('login-email').value.trim().toLowerCase();
+    const token = document.getElementById('login-otp').value.trim();
+    const btn = document.getElementById('verifyBtn');
+
+    if (!token) {
+        showToast("⚠️ يرجى إدخال الرمز", "error");
+        return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<span>جاري التحقق...</span> <i class="fas fa-spinner fa-spin"></i>';
+
+    try {
+        const { error } = await _supabase.auth.verifyOtp({
+            email,
+            token,
+            type: 'email'
+        });
+
+        if (error) throw error;
+
+        showToast("✅ تم التحقق بنجاح!", "success");
+        
+        currentUser = tempLoginData;
+        localStorage.setItem('admin_session', JSON.stringify(currentUser));
+        localStorage.setItem('remembered_email', currentUser.email);
+        
+        // Update Personal Greeting
+        const greetingEl = document.getElementById('bio-admin-greeting');
+        if (greetingEl && currentUser.full_name) {
+            greetingEl.textContent = `مرحباً ${currentUser.full_name.split(' ')[0]}`;
+        }
+
+        document.getElementById('authOverlay').classList.add('hidden');
+        
+        // Trigger UI update if needed
+        if (window.updateGreeting) window.updateGreeting();
+        
+    } catch (err) {
+        console.error("Verify Error:", err);
+        showToast("❌ الرمز غير صحيح أو انتهت صلاحيته", "error");
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<span>تأكيد الدخول</span> <i class="fas fa-check-circle"></i>';
+    }
+}
+
+async function toggleBiometricLock(checkbox) {
+    if (checkbox.checked) {
+        const available = await window.PublicKeyCredential?.isUserVerifyingPlatformAuthenticatorAvailable();
+        if (!available) {
+            showToast("❌ جهازك لا يدعم البصمة أو الوجه في المتصفح", "error");
+            checkbox.checked = false;
+            return;
+        }
+
+        try {
+            const challenge = new Uint8Array(32);
+            window.crypto.getRandomValues(challenge);
+            
+            const credential = await navigator.credentials.create({
+                publicKey: {
+                    challenge,
+                    rp: { name: "Al-Qasim PC Interface" },
+                    user: {
+                        id: Uint8Array.from(currentUser.id.replace(/-/g, ""), c => c.charCodeAt(0)),
+                        name: currentUser.email,
+                        displayName: currentUser.full_name || currentUser.email
+                    },
+                    pubKeyCredParams: [{ alg: -7, type: "public-key" }, { alg: -257, type: "public-key" }],
+                    authenticatorSelection: { 
+                        authenticatorAttachment: "platform",
+                        userVerification: "required" 
+                    },
+                    timeout: 60000
+                }
+            });
+
+            if (credential) {
+                localStorage.setItem('scout-pulse-biometric-enabled', 'true');
+                showToast("✅ تم تفعيل القفل بالبصمة بنجاح", "success");
+            }
+        } catch (err) {
+            console.error(err);
+            showToast("❌ تم إلغاء تفعيل البصمة أو حدث خطأ", "error");
+            checkbox.checked = false;
+        }
+    } else {
+        localStorage.removeItem('scout-pulse-biometric-enabled');
+        showToast("🔓 تم إيقاف القفل بالبصمة", "info");
+    }
+}
+
+async function requestBiometricAccess() {
+    const isBiometricEnabled = localStorage.getItem('scout-pulse-biometric-enabled') === 'true';
+    if (!isBiometricEnabled) {
+        showToast("⚠️ البصمة غير مفعلة، يرجى استخدام الرقم السري", "warning");
+        return;
+    }
+
+    try {
+        const challenge = new Uint8Array(32);
+        window.crypto.getRandomValues(challenge);
+
+        const assertion = await navigator.credentials.get({
+            publicKey: {
+                challenge,
+                timeout: 60000,
+                userVerification: "required"
+            }
+        });
+
+        if (assertion) {
+            document.getElementById('biometricOverlay').classList.add('hidden');
+            showToast("✅ تم التحقق، مرحباً بك مجدداً", "success");
+            
+            if (window.pendingUnlock === 'students') {
+                window.pendingUnlock = null;
+                if (window.unblurStudentsData) window.unblurStudentsData();
+                import('./state.js').then(({ state }) => state.isStudentsUnlocked = true);
+            } else {
+                if (window.updateGreeting) window.updateGreeting();
+            }
+        }
+    } catch (err) {
+        console.error(err);
+        // If cancelled or failed, keep overlay visible
+        showToast("⚠️ فشل التحقق، حاول مرة أخرى", "error");
+    }
+}
+
+function resetAuth() {
+    document.getElementById('auth-step-1').classList.remove('hidden');
+    document.getElementById('auth-step-2').classList.add('hidden');
+    tempLoginData = null;
+}
+
+function logout() {
+    window.showConfirm("تسجيل الخروج", "هل أنت متأكد أنك تريد تسجيل الخروج من النظام؟", () => {
+        localStorage.removeItem('admin_session');
+        location.reload();
+    });
+}
+
+async function addNewAdmin() {
+    const nameEl = document.getElementById('new-admin-name');
+    const emailEl = document.getElementById('new-admin-email');
+    
+    if (!nameEl || !emailEl) return;
+    
+    const full_name = nameEl.value.trim();
+    const email = emailEl.value.trim().toLowerCase();
+
+    if (!full_name || !email) {
+        showToast("⚠️ يرجى تعبئة جميع الحقول", "error");
+        return;
+    }
+
+    try {
+        const { error } = await _supabase
+            .from('admins')
+            .insert([{ full_name, email }]);
+
+        if (error) throw error;
+
+        showToast("✅ تم إضافة المسؤول بنجاح", "success");
+        nameEl.value = '';
+        emailEl.value = '';
+        
+        // Refresh admins list if on settings page
+        if (window.renderAdminsList) window.renderAdminsList();
+    } catch (err) {
+        console.error("Add Admin Error:", err);
+        showToast("❌ فشل إضافة المسؤول: " + err.message, "error");
+    }
+}
+
+async function fetchAdmins() {
+    try {
+        const { data, error } = await _supabase
+            .from('admins')
+            .select('full_name, email')
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        return data;
+    } catch (err) {
+        console.error("Fetch Admins Error:", err);
+        return [];
+    }
+}
+
+// Student Data Synchronization (One-time or Update)
+async function syncStudentsToSupabase() {
+    const studentsData = [
+        { id: '1147826471', name: 'محمد عبدالرحمن أحمد الحلافي', nationality: 'سعودي', phone: '0541700823', section: '205' },
+        { id: '1153678790', name: 'الحسن محمد باقر السلامين', nationality: 'سعودي', phone: '0533611822', section: '103' },
+        { id: '1150992939', name: 'طلال بن محمد الشمراني', nationality: 'سعودي', phone: '0504243630', section: '104' },
+        { id: '1146262140', name: 'أديب خالد عبدالعزيز الصقر', nationality: 'سعودي', phone: '0550196021', section: '201' },
+        { id: '1148673047', name: 'جمعان خالد جمعان الدوسري', nationality: 'سعودي', phone: '0578365651', section: '202' },
+        { id: '1154819872', name: 'تركي فيصل عبدالله العسيري', nationality: 'سعودي', phone: '0506595113', section: '103' },
+        { id: '1154410334', name: 'محمد عبدالعزيز محمد العسيري', nationality: 'سعودي', phone: '0550064551', section: '104' },
+        { id: '1149252775', name: 'عبدالعزيز خالد بوشليبي', nationality: 'سعودي', phone: '0534492324', section: '203' },
+        { id: '2282125646', name: 'عمرو احمد عبدالستار مطاوع', nationality: 'مصري', phone: '0544776253', section: '205' },
+        { id: '1146662679', name: 'احمد عبدالله الرزق', nationality: 'سعودي', phone: '0577159417', section: '203' },
+        { id: '1168019246', name: 'زياد عبدالرحمن سعيد الزهراني', nationality: 'سعودي', phone: '0557257325', section: '103' },
+        { id: '2270164532', name: 'يوسف سامي محمد العمودي', nationality: 'يمني', phone: '0549889406', section: '204' },
+        { id: '1164569137', name: 'عبد الرحمن عادل الدوسري', nationality: 'سعودي', phone: '0545053137', section: '101' },
+        { id: '1146671878', name: 'علي سعيد علي الغرير', nationality: 'سعودي', phone: '0530471551', section: '204' },
+        { id: '1146137847', name: 'خالد عبدالعزيز عبدالله بوردحه', nationality: 'سعودي', phone: '0500621499', section: '203' },
+        { id: '1148565912', name: 'عبدالله محمد عبدالله الزهراني', nationality: 'سعودي', phone: '0537973279', section: '103' },
+        { id: '1151899240', name: 'راشد بن سعيد الهاجري', nationality: 'سعودي', phone: '0535550062', section: '204' },
+        { id: '1149716829', name: 'حسن احمد علي بوعبيد', nationality: 'سعودي', phone: '0500029782', section: '102' },
+        { id: 'm-sadeq', name: 'محمد صادق علي الدرع', nationality: 'سعودي', phone: '-', section: '103' },
+        { id: '1149250720', name: 'فهد عبد العزيز هويمل', nationality: 'سعودي', phone: '0564208987', section: '203' },
+    ];
+
+    console.log("⏳ Starting Student Sync to Supabase...");
+    
+    try {
+        const { error } = await _supabase
+            .from('scouts')
+            .upsert(studentsData, { onConflict: 'id' });
+
+        if (error) throw error;
+        console.log("✅ Student Sync Completed Successfully!");
+        showToast("✅ تم تحديث بيانات الطلاب في القاعدة", "success");
+    } catch (err) {
+        console.error("Sync Error:", err);
+        showToast("❌ فشل تحديث الطلاب: " + err.message, "error");
+    }
+}
+
+function showToast(message, type = 'info') {
+    // Check if Pc Interface toast exists
+    const toast = document.getElementById('copy-toast');
+    if (toast) {
+        toast.innerHTML = `<i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i> ${message}`;
+        toast.className = 'copy-toast active';
+        setTimeout(() => toast.classList.remove('active'), 3000);
+    } else {
+        window.showAlert("تنبيه", message, type === 'error' ? 'fa-exclamation-triangle' : 'fa-info-circle');
+    }
+}
+
+window._supabase = _supabase;
+window.sendAuthCode = sendAuthCode;
+window.verifyAuthCode = verifyAuthCode;
+window.resetAuth = resetAuth;
+window.logout = logout;
+window.toggleBiometricLock = toggleBiometricLock;
+window.requestBiometricAccess = requestBiometricAccess;
+window.syncStudentsToSupabase = syncStudentsToSupabase;
+window.addNewAdmin = addNewAdmin;
+window.fetchAdmins = fetchAdmins;

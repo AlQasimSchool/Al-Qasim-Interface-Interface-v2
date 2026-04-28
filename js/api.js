@@ -105,46 +105,131 @@ export async function fetchWeather() {
 export async function fetchStudentsFromDoc() {
     if (state.studentsCache) return state.studentsCache;
 
-    const url = `https://www.googleapis.com/drive/v3/files/${CONFIG.STUDENTS_DOC_ID}/export?mimeType=text/plain&key=${CONFIG.DRIVE_API_KEY}`;
+    if (!window._supabase) {
+        throw new Error('Supabase client not initialized');
+    }
 
     try {
-        const response = await fetch(url);
-        if (!response.ok) throw new Error('فشل جلب ملف الطلاب');
+        const { data, error } = await window._supabase
+            .from('scouts')
+            .select('*')
+            .order('name');
 
-        const text = await response.text();
-        const lines = text.split('\n')
-            .map(l => l.trim())
-            .filter(l => l !== ''); // Keep '-' to maintain alignment
+        if (error) throw error;
 
-        // Logic: Find where headers end. Data starts after "رقم الجوال"
-        const headerIndex = lines.findIndex(l => l.includes('رقم الجوال'));
-        if (headerIndex === -1) throw new Error('تنسيق الملف غير صحيح');
-
-        const dataLines = lines.slice(headerIndex + 1);
-        const students = [];
-
-        // Every 6 lines = 1 student (ID, Name, Nationality, CivilID, Section, Phone)
-        for (let i = 0; i < dataLines.length; i += 6) {
-            // Check if we have enough lines and if the first line is a number (ID)
-            const id = dataLines[i];
-            if (isNaN(id)) break; // End of list or unexpected line
-
-            if (i + 5 < dataLines.length) {
-                students.push({
-                    id: parseInt(id),
-                    name: dataLines[i + 1],
-                    nationality: dataLines[i + 2],
-                    civilId: dataLines[i + 3],
-                    section: dataLines[i + 4],
-                    phone: dataLines[i + 5],
-                });
-            }
-        }
+        // Map Supabase 'scouts' table to our Student structure
+        const students = data.map(s => ({
+            id: s.id,
+            name: s.name,
+            nationality: s.nationality || 'سعودي',
+            civilId: s.id, // Assuming ID is the National ID
+            section: s.section || s.patrol || '-', // Use section or patrol
+            phone: s.phone || '-'
+        }));
 
         state.studentsCache = students;
         return students;
     } catch (err) {
-        console.error('Students API Error:', err);
+        console.error('Students Supabase Error:', err);
         throw err;
+    }
+}
+
+// --- Calendar Supabase ---
+export async function fetchCalendarEvents() {
+    if (!window._supabase) return [];
+    try {
+        const { data, error } = await window._supabase.from('calendar_events').select('*');
+        if (error) throw error;
+        return data || [];
+    } catch (err) {
+        console.error('Calendar Fetch Error:', err);
+        return [];
+    }
+}
+
+export async function saveCalendarEventSupabase(event) {
+    if (!window._supabase) return;
+    try {
+        const { error } = await window._supabase.from('calendar_events').insert([event]);
+        if (error) throw error;
+    } catch (err) {
+        console.error('Calendar Save Error:', err);
+    }
+}
+
+export async function deleteCalendarEventSupabase(id) {
+    if (!window._supabase) return;
+    try {
+        const { error } = await window._supabase.from('calendar_events').delete().eq('id', id);
+        if (error) throw error;
+    } catch (err) {
+        console.error('Calendar Delete Error:', err);
+    }
+}
+
+// --- Tasks Supabase ---
+export async function fetchTasksSupabase() {
+    if (!window._supabase) return [];
+    try {
+        const { data, error } = await window._supabase.from('tasks').select('*');
+        if (error) throw error;
+        return data || [];
+    } catch (err) {
+        console.error('Tasks Fetch Error:', err);
+        return [];
+    }
+}
+
+export async function saveTaskSupabase(task) {
+    if (!window._supabase) return;
+    try {
+        const { error } = await window._supabase.from('tasks').upsert([task]);
+        if (error) throw error;
+    } catch (err) {
+        console.error('Task Save Error:', err);
+    }
+}
+
+export async function deleteTaskSupabase(id) {
+    if (!window._supabase) return;
+    try {
+        const { error } = await window._supabase.from('tasks').delete().eq('id', id);
+        if (error) throw error;
+    } catch (err) {
+        console.error('Task Delete Error:', err);
+    }
+}
+
+// --- Links Supabase ---
+export async function fetchCustomLinksSupabase() {
+    if (!window._supabase) return [];
+    try {
+        const { data, error } = await window._supabase.from('custom_links').select('*');
+        if (error) throw error;
+        return data || [];
+    } catch (err) {
+        console.error('Links Fetch Error:', err);
+        return [];
+    }
+}
+
+export async function saveCustomLinkSupabase(link) {
+    if (!window._supabase) return;
+    try {
+        const { error } = await window._supabase.from('custom_links').upsert([link]);
+        if (error) throw error;
+    } catch (err) {
+        console.error('Link Save Error:', err);
+    }
+}
+
+export async function deleteCustomLinkSupabase(id) {
+    if (!window._supabase) return;
+    try {
+        const { error } = await window._supabase.from('custom_links').delete().eq('id', id);
+        if (error) throw error;
+    } catch (err) {
+        console.error('Link Delete Error:', err);
     }
 }

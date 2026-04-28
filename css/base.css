@@ -1,42 +1,42 @@
 /* Base styles, variables, and resets — Clean Minimal Theme */
-@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Outfit:wght@400;700;900&display=swap');
 
 :root {
-    --primary-green: #2E7D32;
-    --primary-green-dark: #1B5E20;
-    --primary-green-light: #4CAF50;
-    --primary-green-glow: rgba(46, 125, 50, 0.15);
-    --brown: #A67B5B;
-    --brown-light: #D7BFA9;
-    --brown-dark: #7B5B3A;
-    --brown-glow: rgba(166, 123, 91, 0.12);
+    --primary: #6366f1;
+    --primary-dark: #4f46e5;
+    --primary-light: #818cf8;
+    --primary-glow: rgba(99, 102, 241, 0.5);
+    
+    --bg-dark: #0f172a;
+    --bg-darker: #0f172a; /* Make it uniform like ScoutLog */
     --white: #FFFFFF;
-    --off-white: #F2F2F7;
-    --glass-bg: rgba(255, 255, 255, 0.45);
-    --glass-bg-strong: rgba(255, 255, 255, 0.65);
-    --glass-border: rgba(0, 0, 0, 0.08);
-    /* More visible border */
-    --border-light: rgba(0, 0, 0, 0.07);
-    --glass-blur: blur(20px);
+    --off-white: #f8fafc;
+    
+    --glass-bg: rgba(255, 255, 255, 0.03);
+    --glass-bg-strong: rgba(255, 255, 255, 0.03);
+    --glass-border: rgba(255, 255, 255, 0.08);
+    --border-light: rgba(255, 255, 255, 0.08);
+    --glass-blur: blur(8px); /* As in ScoutLog */
 
-    /* Defined Premium Shadows */
-    --shadow-soft: 0 4px 15px rgba(0, 0, 0, 0.05);
-    /* Slightly deeper */
-    --shadow-card: 0 10px 35px rgba(0, 0, 0, 0.08);
-    /* Stronger elevation */
-    --shadow-hover: 0 15px 45px rgba(0, 0, 0, 0.12);
-    --shadow-button: 0 6px 18px rgba(46, 125, 50, 0.25);
-    --shadow-float: 0 25px 50px rgba(0, 0, 0, 0.15);
-    --text-primary: #1A1A2E;
-    --text-secondary: #5A5A72;
-    --text-muted: #9E9EB0;
-    --sidebar-w: 320px;
+    /* Basic soft shadow to avoid muddying the glass effect */
+    --shadow-soft: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --shadow-card: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    --shadow-hover: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    --shadow-button: 0 4px 14px 0 var(--primary-glow);
+    --shadow-float: 0 25px 50px rgba(0, 0, 0, 0.4);
+
+    --text-primary: #f8fafc;
+    --text-secondary: #94a3b8;
+    --text-muted: #64748b;
+    
+    --sidebar-w: 280px; /* Reduced to look more modern */
     --radius-sm: 16px;
-    --radius-md: 22px;
-    --radius-lg: 28px;
+    --radius-md: 1.5rem; /* 24px, matching ScoutLog glass-card */
+    --radius-lg: 1.5rem;
     --speed: 0.3s;
     --header-h: 80px;
 }
+
 
 *,
 *::before,
@@ -46,13 +46,17 @@
     box-sizing: border-box;
 }
 
+input, button, select, textarea, h1, h2, h3, h4, h5, h6, small, span, label, p, a {
+    font-family: inherit;
+}
+
 html {
     font-size: 18px;
 }
 
 body {
-    font-family: 'Cairo', 'Segoe UI', Tahoma, sans-serif;
-    background: var(--off-white);
+    font-family: 'Cairo', 'Outfit', sans-serif;
+    background: var(--bg-dark);
     color: var(--text-primary);
     min-height: 100vh;
     overflow-x: hidden;

@@ -6,13 +6,13 @@
 }
 
 .doc-card {
-    background: var(--white);
+    background: var(--bg-darker);
     border-radius: var(--radius-md);
     border: 1.5px solid var(--glass-border);
     overflow: hidden;
     cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: var(--shadow-soft);
+    transition: all var(--speed) cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: var(--shadow-card);
 }
 
 .doc-card:hover {
@@ -22,7 +22,7 @@
 
 .doc-card-thumb {
     height: 140px;
-    background: var(--off-white);
+    background: var(--bg-dark);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -169,17 +169,17 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--primary-green-dark);
+    color: var(--primary-light);
     transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .doc-dl-btn:hover,
 .card-dl-btn:hover {
-    background: var(--primary-green);
+    background: var(--primary);
     color: white;
-    border-color: var(--primary-green);
+    border-color: var(--primary);
     transform: scale(1.1);
-    box-shadow: 0 4px 12px rgba(46, 125, 50, 0.3);
+    box-shadow: 0 4px 12px var(--primary-glow);
 }
 
 .doc-card-bottom {
@@ -203,7 +203,7 @@
 }
 
 .report-card {
-    background: var(--white);
+    background: var(--glass-bg);
     border-radius: var(--radius-md);
     border: 1.5px solid var(--glass-border);
     overflow: hidden;
@@ -292,17 +292,17 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--primary-green-dark);
+    color: var(--primary-light);
     transition: all 0.25s;
     text-decoration: none;
 }
 
 .report-dl-btn:hover {
-    background: var(--primary-green);
+    background: var(--primary);
     color: white;
-    border-color: var(--primary-green);
+    border-color: var(--primary);
     transform: scale(1.1);
-    box-shadow: 0 4px 12px rgba(46, 125, 50, 0.3);
+    box-shadow: 0 4px 12px var(--primary-glow);
 }
 
 /* ==================== PDF Viewer Modal ==================== */
@@ -326,7 +326,7 @@
     position: relative;
     width: 90vw;
     height: 88vh;
-    background: var(--white);
+    background: var(--bg-dark);
     border-radius: var(--radius-lg);
     overflow: hidden;
     display: flex;

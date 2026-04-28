@@ -1,12 +1,18 @@
 import { state } from './state.js';
-import { sendNotification } from './notifications.js';
+import { fetchTasksSupabase, saveTaskSupabase, deleteTaskSupabase } from './api.js';
 
 export function getTasks() {
-    return JSON.parse(localStorage.getItem('scout_tasks') || '[]');
+    return state.tasksCache || [];
 }
 
-export function saveTasks(tasks) {
-    localStorage.setItem('scout_tasks', JSON.stringify(tasks));
+export async function loadTasks() {
+    state.tasksCache = await fetchTasksSupabase();
+    renderSidebarTasks();
+}
+
+export async function saveTasks(tasks) {
+    // This is a legacy helper, but we'll use saveTaskSupabase instead for individual items
+    state.tasksCache = tasks;
     renderSidebarTasks();
 }
 
@@ -30,20 +36,9 @@ export function renderSidebarTasks() {
             <div id="sidebar-tasks-list" class="sidebar-tasks-list"></div>
             <div class="task-input-group">
                 <input type="text" id="sidebar-task-input" placeholder="أضف مهمة او ملاحظة...">
-                <div id="sidebar-schedule-row" class="task-schedule-row hidden">
-                    <div class="task-input-field">
-                        <i class="fas fa-calendar-day"></i>
-                        <input type="date" id="sidebar-task-date">
-                    </div>
-                    <div class="task-input-field">
-                        <i class="fas fa-clock"></i>
-                        <input type="time" id="sidebar-task-time">
-                    </div>
-                </div>
                 <div class="btns">
                     <button id="add-sidebar-task" title="إضافة مهمة"><i class="fas fa-plus"></i> مهمة</button>
                     <button id="add-sidebar-note" title="إضافة ملاحظة"><i class="fas fa-sticky-note"></i> ملاحظة</button>
-                    <button id="toggle-sidebar-schedule" class="btn-toggle-schedule" title="جدولة التذكير"><i class="fas fa-clock"></i></button>
                 </div>
             </div>
         `;
@@ -64,7 +59,6 @@ export function renderSidebarTasks() {
             <div class="sidebar-note-pin"><i class="fas fa-thumbtack"></i></div>
             <div class="sidebar-note-text">
                 <div class="text-content">${displayText}</div>
-                ${n.reminderTime ? `<div class="sidebar-note-scheduled"><i class="fas fa-clock"></i> ${new Date(n.reminderTime).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}</div>` : ''}
                 ${isLong ? `<span class="read-more-note" onclick="window.viewNote(${n.id})">قراءة المزيد</span>` : ''}
             </div>
             <div class="sidebar-note-del" data-id="${n.id}"><i class="fas fa-trash-alt"></i></div>
@@ -76,7 +70,6 @@ export function renderSidebarTasks() {
             <div class="sidebar-check" data-id="${t.id}"><i class="fas fa-check"></i></div>
             <div class="sidebar-content">
                 <div class="sidebar-text">${t.text}</div>
-                ${t.reminderTime ? `<div class="sidebar-task-scheduled"><i class="fas fa-clock"></i> ${new Date(t.reminderTime).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}</div>` : ''}
             </div>
             <div class="sidebar-del" data-id="${t.id}"><i class="fas fa-times"></i></div>
         </div>
@@ -124,45 +117,39 @@ window.viewNote = function (id) {
     modal.classList.add('active');
 };
 
-export async function addTask(text, type = 'task', reminderTime = null) {
+export async function addTask(text, type = 'task') {
     if (!text || !text.trim()) {
         alert('الرجاء كتابة نص المهمة أو الملاحظة');
         return;
     }
-    const tasks = getTasks();
-    tasks.push({
-        id: Date.now(),
+    const newTask = {
         text: text.trim(),
         completed: false,
-        type,
-        reminderTime,
-        notified: false
-    });
-    saveTasks(tasks);
+        type
+    };
+    
+    await saveTaskSupabase(newTask);
+    await loadTasks(); // Re-fetch to get IDs and sync
 
     // Refresh Tasks Board if active
     if (state.currentPage === 'tasks_board') {
         import('./navigation.js').then(m => m.renderTasksBoard());
     }
-
-    // Success notification
-    sendNotification(
-        type === 'task' ? 'تمت إضافة المهمة' : 'تمت إضافة الملاحظة',
-        text
-    );
 }
 
-export function toggleTask(id) {
+export async function toggleTask(id) {
     const tasks = getTasks();
     const task = tasks.find(t => t.id === id);
     if (task && task.type === 'task') {
         task.completed = !task.completed;
-        saveTasks(tasks);
+        await saveTaskSupabase(task);
+        renderSidebarTasks();
     }
 }
 
-export function deleteTask(id) {
-    saveTasks(getTasks().filter(t => t.id !== id));
+export async function deleteTask(id) {
+    await deleteTaskSupabase(id);
+    await loadTasks();
 }
 
 // Global helpers for Tasks Board

@@ -12,6 +12,24 @@ window.openNewTaskModal = () => {
     window.openCalendarModal(dStr, today.getDate());
 };
 
+// Sidebar Pinning Logic
+document.addEventListener('DOMContentLoaded', () => {
+    const pinBtn = document.getElementById('pin-sidebar-btn');
+    const sidebar = document.querySelector('.sidebar');
+    
+    if (pinBtn && sidebar) {
+        // Load initial state
+        const isPinned = localStorage.getItem('scout-sidebar-pinned') === 'true';
+        if (isPinned) sidebar.classList.add('pinned');
+        
+        pinBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            const pinned = sidebar.classList.toggle('pinned');
+            localStorage.setItem('scout-sidebar-pinned', pinned);
+        });
+    }
+});
+
 export function navigateTo(pageId) {
     const pageContent = document.getElementById('page-content');
     if (!pageContent || !templates[pageId]) return;
@@ -40,6 +58,7 @@ export function navigateTo(pageId) {
         try {
             if (pageId === 'dashboard') {
                 loadDashboardStats();
+                updateSidebarFooter();
             } else if (pageId === 'documents') {
                 await renderDocuments();
             } else if (pageId === 'media') {
@@ -54,11 +73,28 @@ export function navigateTo(pageId) {
                 await renderStudents();
             } else if (pageId === 'tasks_board') {
                 renderTasksBoard();
+            } else if (pageId === 'attendance') {
+                updateSidebarFooter();
+            } else if (pageId === 'settings') {
+                if (window.renderAdminsList) window.renderAdminsList();
+                updateSidebarFooter();
+            } else {
+                updateSidebarFooter();
             }
         } catch (err) {
             console.error('Logic Error:', err);
         }
     }, 150);
+}
+
+export function updateSidebarFooter() {
+    const adminSession = JSON.parse(localStorage.getItem('admin_session') || '{}');
+    if (adminSession.full_name) {
+        const nameEl = document.getElementById('sidebar-admin-name');
+        const avatarEl = document.getElementById('sidebar-admin-avatar');
+        if (nameEl) nameEl.textContent = adminSession.full_name;
+        if (avatarEl) avatarEl.textContent = adminSession.full_name.charAt(0);
+    }
 }
 
 export async function loadDashboardStats() {
@@ -92,17 +128,12 @@ export function updateVideoStat(count) {
 }
 
 export function updateClock() {
-    const clockEl = document.getElementById('header-clock');
-    if (!clockEl) return;
+    const timeEl = document.querySelector('.header-clock .time');
+    if (!timeEl) return;
 
     const now = new Date();
-    const timeStr = now.toLocaleTimeString('ar-EG', { hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' });
-    const dateStr = now.toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-
-    const timeBox = clockEl.querySelector('.time');
-    const dateBox = clockEl.querySelector('.date');
-    if (timeBox) timeBox.textContent = timeStr;
-    if (dateBox) dateBox.textContent = dateStr;
+    const timeStr = now.toLocaleTimeString('ar-SA', { hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    timeEl.textContent = timeStr;
 }
 
 export async function renderDocuments(folderId = null) {
@@ -205,7 +236,7 @@ export async function renderReports() {
             const thumb = file.thumbnailLink ? file.thumbnailLink.replace('=s220', '=s400') : null;
 
             return `
-                <div class="report-card animate-in" data-report-id="${file.id}" data-preview-url="${previewUrl}" data-name="${file.name}">
+                <div class="report-card glass-card animate-in" data-report-id="${file.id}" data-preview-url="${previewUrl}" data-name="${file.name}">
                     <div class="report-card-thumb">
                         ${thumb ? `<img src="${thumb}" loading="lazy">` : '<i class="fas fa-file-pdf"></i>'}
                     </div>

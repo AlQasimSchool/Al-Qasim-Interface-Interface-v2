@@ -1,19 +1,23 @@
 import { getHoliday } from './holidays.js';
-import { sendNotification } from './notifications.js';
+import { fetchCalendarEvents, saveCalendarEventSupabase, deleteCalendarEventSupabase } from './api.js';
 
 export let calDate = new Date();
-export let calEvents = JSON.parse(localStorage.getItem('scout_cal_events') || '{}');
+export let calEvents = {}; // Will be loaded from Supabase
 export let selectedDay = null;
 
-export function initCalendar() {
+export async function initCalendar() {
+    // Load events from Supabase
+    const events = await fetchCalendarEvents();
+    calEvents = {};
+    events.forEach(ev => {
+        calEvents[ev.date] = ev.text;
+    });
+
     renderCalendar();
 
     // Bind navigation buttons
     document.getElementById('cal-prev')?.addEventListener('click', () => changeMonth(-1));
     document.getElementById('cal-next')?.addEventListener('click', () => changeMonth(1));
-
-    // Check for today's agenda on load
-    checkTodayAgenda();
 }
 
 export function renderCalendar() {
@@ -74,6 +78,10 @@ export function renderCalendar() {
             document.querySelectorAll('.cal-day').forEach(el => el.classList.remove('selected'));
             dayEl.classList.add('selected');
             renderDayDetails(dStr, d);
+        };
+
+        dayEl.ondblclick = () => {
+            openCalendarModal(dStr, d);
         };
         grid.appendChild(dayEl);
     }
@@ -156,6 +164,10 @@ function renderDayDetails(dateStr, dayNum) {
                     ${title}
                 </div>
                 ${desc ? `<div class="day-detail-desc">${desc}</div>` : ''}
+                
+                <button class="day-detail-edit-btn" onclick="window.openCalendarModal('${dateStr}', ${dayNum})">
+                    <i class="fas fa-edit"></i> إضافة / تعديل
+                </button>
             </div>
         </div>
     `;
@@ -213,13 +225,17 @@ async function saveCalendarEvent() {
     const text = document.getElementById('cal-event-text').value.trim();
     if (text) {
         calEvents[selectedDay] = text;
-
-        // Notify success via robust helper
-        sendNotification('تم تحديث التقويم', `تم حفظ: ${text}`);
+        await saveCalendarEventSupabase({ date: selectedDay, text });
     } else {
         delete calEvents[selectedDay];
+        // We'd ideally need the UUID here, but for now we can delete by date
+        // Note: The API function expects an ID, so let's update it to handle date or update the API
+        // For simplicity, I'll update the API to handle deletion by date if needed, or just use eq('date', selectedDay)
+        if (window._supabase) {
+            await window._supabase.from('calendar_events').delete().eq('date', selectedDay);
+        }
     }
-    localStorage.setItem('scout_cal_events', JSON.stringify(calEvents));
+    
     document.getElementById('calendar-modal').classList.remove('active');
     renderCalendar();
 
@@ -236,10 +252,10 @@ async function checkTodayAgenda() {
     const event = calEvents[todayStr];
 
     if (event) {
-        sendNotification(
-            'أجندة اليوم 📅',
-            `لديك حدث اليوم: ${event}`
-        );
+        // sendNotification(
+        //     'أجندة اليوم 📅',
+        //     `لديك حدث اليوم: ${event}`
+        // );
     }
 
     // Set up a daily check if it doesn't exist

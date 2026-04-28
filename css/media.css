@@ -6,12 +6,13 @@
 }
 
 .video-card {
-    background: var(--white);
+    background: var(--bg-darker);
     border-radius: var(--radius-lg);
-    border: 1px solid var(--glass-border);
+    border: 1.5px solid var(--glass-border);
     overflow: hidden;
     cursor: pointer;
-    transition: 0.3s;
+    transition: all var(--speed) ease;
+    box-shadow: var(--shadow-card);
 }
 
 .video-card:hover {

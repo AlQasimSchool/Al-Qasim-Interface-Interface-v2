@@ -1,29 +1,35 @@
-import { state, saveCustomLinks } from './state.js';
+import { state } from './state.js';
 import { navigateTo } from './navigation.js';
+import { fetchCustomLinksSupabase, saveCustomLinkSupabase, deleteCustomLinkSupabase } from './api.js';
 
-export function saveCustomLink(name, url, desc, icon) {
+export async function loadCustomLinks() {
+    state.customLinks = await fetchCustomLinksSupabase();
+}
+
+export async function saveCustomLink(name, url, desc, icon) {
     if (!name || !url) {
         alert('الرجاء إدخال الاسم والرابط');
         return false;
     }
 
-    // Default icon if none selected
     if (!icon) icon = 'fas fa-link';
 
-    state.customLinks.push({
+    const newLink = {
         name,
         url,
         desc: desc || '',
         cat: 'user',
         icon: icon,
         color: 'blue'
-    });
-    saveCustomLinks();
+    };
+
+    await saveCustomLinkSupabase(newLink);
+    await loadCustomLinks();
     return true;
 }
 
-export function deleteCustomLink(url) {
-    state.customLinks = state.customLinks.filter(l => l.url !== url);
-    saveCustomLinks();
+export async function deleteCustomLink(id) {
+    await deleteCustomLinkSupabase(id);
+    await loadCustomLinks();
     navigateTo('links');
 }
