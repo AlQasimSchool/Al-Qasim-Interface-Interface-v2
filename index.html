@@ -9,21 +9,29 @@
     <link rel="icon" href="ico.png" type="image/png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-    <!-- Modular Styles - Force Cache Update v7.0 -->
-    <link rel="stylesheet" href="css/base.css?v=7.0">
-    <link rel="stylesheet" href="css/layout.css?v=7.0">
-    <link rel="stylesheet" href="css/components.css?v=7.0">
-    <link rel="stylesheet" href="css/utilities.css?v=7.0">
-    <link rel="stylesheet" href="css/calendar.css?v=7.0">
-    <link rel="stylesheet" href="css/media.css?v=7.0">
-    <link rel="stylesheet" href="css/docs.css?v=7.0">
+    <!-- Modular Styles - Force Cache Update v8.0 -->
+    <link rel="stylesheet" href="/css/base.css?v=8.0">
+    <link rel="stylesheet" href="/css/layout.css?v=8.0">
+    <link rel="stylesheet" href="/css/components.css?v=8.0">
+    <link rel="stylesheet" href="/css/utilities.css?v=8.0">
+    <link rel="stylesheet" href="/css/calendar.css?v=8.0">
+    <link rel="stylesheet" href="/css/media.css?v=8.0">
+    <link rel="stylesheet" href="/css/docs.css?v=8.0">
 
     <!-- Supabase CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
 
-    <!-- Unified Auth System -->
-    <script src="js/auth-unified.js?v=3.0" defer></script>
+    <!-- Mobile Debugger (Temporary for fixing) -->
+    <script>
+        window.onerror = function(msg, url, line) {
+            const errDiv = document.createElement('div');
+            errDiv.style = 'position:fixed; bottom:0; left:0; width:100%; background:rgba(231,76,60,0.95); color:white; padding:15px; z-index:999999; font-size:12px; font-family:monospace; direction:ltr; text-align:left; max-height:150px; overflow:auto;';
+            errDiv.innerHTML = '<strong>Mobile Error:</strong> ' + msg + '<br>@ ' + url + ' (Line: ' + line + ')';
+            document.body.appendChild(errDiv);
+            return false;
+        };
+    </script>
 </head>
 
 <body>
@@ -52,7 +60,7 @@
             <!-- Left Side: Content & Branding -->
             <div class="auth-left-side">
                 <div class="auth-branding">
-                    <img src="ico.png" alt="Logo" class="auth-logo-img">
+                    <img src="/ico.png" alt="Logo" class="auth-logo-img">
                     <span class="auth-brand-name">Al-Qasim Interface</span>
                 </div>
                 
@@ -73,7 +81,7 @@
             </div>
 
             <!-- Right Side: Hero & Login Card -->
-            <div class="auth-right-side" style="background-image: url('imgs/image (1).png');">
+            <div class="auth-right-side" style="background-image: url('/imgs/image (1).png');">
                 <div class="auth-card animate-in">
                     <div id="auth-loading-state" class="auth-loading-state">
                         <div class="spinner"></div>
@@ -176,7 +184,7 @@
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-brand">
                 <div class="logo-icon">
-                    <img src="ico.png" alt="Logo">
+                    <img src="/ico.png" alt="Logo">
                 </div>
                 <h2>واجهة القاسم</h2>
             </div>
@@ -269,12 +277,13 @@
     <!-- Hidden Print Section (Standardized) -->
     <div id="print-section" style="display: none;"></div>
 
-    <!-- Core App Scripts (Load as Modules) -->
-    <script src="js/state.js?v=7.0" type="module"></script>
-    <script src="js/api.js?v=7.0" type="module"></script>
-    <script src="js/ui.js?v=7.0" type="module"></script>
-    <script src="js/navigation.js?v=7.0" type="module"></script>
-    <script src="js/app.js?v=7.0" type="module"></script>
+    <!-- Core App Scripts (Load as Modules at bottom) -->
+    <script src="/js/state.js?v=8.0" type="module"></script>
+    <script src="/js/api.js?v=8.0" type="module"></script>
+    <script src="/js/ui.js?v=8.0" type="module"></script>
+    <script src="/js/navigation.js?v=8.0" type="module"></script>
+    <script src="/js/app.js?v=8.0" type="module"></script>
+    <script src="/js/auth-unified.js?v=8.0"></script>
 </body>
 
 </html>
