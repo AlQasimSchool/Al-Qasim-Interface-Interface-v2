@@ -82,13 +82,13 @@ document.addEventListener('DOMContentLoaded', () => {
     
     if (pinBtn && sidebar) {
         // Load initial state
-        const isPinned = localStorage.getItem('scout-sidebar-pinned') === 'true';
+        const isPinned = window.safeStorage.getItem('scout-sidebar-pinned') === 'true';
         if (isPinned) sidebar.classList.add('pinned');
         
         pinBtn.addEventListener('click', (e) => {
             e.preventDefault();
             const pinned = sidebar.classList.toggle('pinned');
-            localStorage.setItem('scout-sidebar-pinned', pinned);
+            window.safeStorage.setItem('scout-sidebar-pinned', pinned);
         });
     }
 });
@@ -152,7 +152,7 @@ export function navigateTo(pageId) {
 }
 
 export function updateSidebarFooter() {
-    const adminSession = JSON.parse(localStorage.getItem('admin_session') || '{}');
+    const adminSession = JSON.parse(window.safeStorage.getItem('admin_session') || '{}');
     if (adminSession.full_name) {
         const nameEl = document.getElementById('sidebar-admin-name');
         const avatarEl = document.getElementById('sidebar-admin-avatar');

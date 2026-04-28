@@ -2,8 +2,8 @@ export const state = {
     driveFilesCache: null,
     reportFilesCache: null,
     youtubeVideosCache: null,
-    docsViewMode: localStorage.getItem('scout_docs_view') || 'grid',
-    customLinks: JSON.parse(localStorage.getItem('scout_custom_links') || '[]'),
+    docsViewMode: window.safeStorage.getItem('scout_docs_view') || 'grid',
+    customLinks: JSON.parse(window.safeStorage.getItem('scout_custom_links') || '[]'),
     mostOpenedCache: null,
     currentPage: 'dashboard',
 
@@ -19,9 +19,9 @@ window.state = state;
 
 // State update helpers
 export function saveCustomLinks() {
-    localStorage.setItem('scout_custom_links', JSON.stringify(state.customLinks));
+    window.safeStorage.setItem('scout_custom_links', JSON.stringify(state.customLinks));
 }
 
 export function saveDocsViewMode() {
-    localStorage.setItem('scout_docs_view', state.docsViewMode);
+    window.safeStorage.setItem('scout_docs_view', state.docsViewMode);
 }

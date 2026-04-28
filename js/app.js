@@ -370,7 +370,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('biometricOverlay').classList.remove('hidden');
         document.getElementById('lock-pin').value = '';
         
-        const isBiometricEnabled = localStorage.getItem('scout-pulse-biometric-enabled') === 'true';
+        const isBiometricEnabled = window.safeStorage.getItem('scout-pulse-biometric-enabled') === 'true';
         if (isBiometricEnabled) {
             if (window.requestBiometricAccess) window.requestBiometricAccess();
         } else {

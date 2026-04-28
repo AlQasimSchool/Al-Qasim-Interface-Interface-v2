@@ -11,25 +11,12 @@ let currentUser = null;
 let tempLoginData = null;
 let resendInterval = null;
 
-// Safe Storage Helper to handle "Tracking Prevention" blocking access
-const safeStorage = {
-    getItem: (key) => {
-        try { return localStorage.getItem(key); } catch (e) { return null; }
-    },
-    setItem: (key, val) => {
-        try { localStorage.setItem(key, val); } catch (e) { console.warn("Storage blocked", e); }
-    },
-    removeItem: (key) => {
-        try { localStorage.removeItem(key); } catch (e) { }
-    }
-};
-
 // Initialize Auth
 document.addEventListener('DOMContentLoaded', () => {
     checkSession();
     
     // Auto-fill email if remembered
-    const savedEmail = safeStorage.getItem('remembered_email');
+    const savedEmail = window.safeStorage.getItem('remembered_email');
     if (savedEmail) {
         const emailInput = document.getElementById('login-email');
         if (emailInput) emailInput.value = savedEmail;
@@ -38,7 +25,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Sync Biometric Toggle UI
     const bioToggle = document.getElementById('biometric-toggle');
     if (bioToggle) {
-        bioToggle.checked = safeStorage.getItem('scout-pulse-biometric-enabled') === 'true';
+        bioToggle.checked = window.safeStorage.getItem('scout-pulse-biometric-enabled') === 'true';
     }
 });
 
@@ -50,7 +37,7 @@ async function checkSession() {
     const authOverlay = document.getElementById('authOverlay');
     const bioOverlay = document.getElementById('biometricOverlay');
 
-    const session = safeStorage.getItem('admin_session');
+    const session = window.safeStorage.getItem('admin_session');
     
     if (session) {
         try {
@@ -70,7 +57,7 @@ async function checkSession() {
             
             if (admin) {
                 currentUser = admin;
-                safeStorage.setItem('admin_session', JSON.stringify(currentUser));
+                window.safeStorage.setItem('admin_session', JSON.stringify(currentUser));
                 
                 // Set UI greetings
                 const greetingEl = document.getElementById('bio-admin-greeting');
@@ -87,7 +74,7 @@ async function checkSession() {
                     bioOverlay.classList.remove('hidden');
                     if (bioContent) bioContent.classList.remove('hidden');
                     
-                    const isBiometricEnabled = safeStorage.getItem('scout-pulse-biometric-enabled') === 'true';
+                    const isBiometricEnabled = window.safeStorage.getItem('scout-pulse-biometric-enabled') === 'true';
                     if (isBiometricEnabled) {
                         requestBiometricAccess();
                     }
@@ -287,7 +274,7 @@ window.requestPinChange = async function() {
                         
                         showToast("تم تحديث الرقم السري بنجاح", "success");
                         currentUser.pin = newPin;
-                        safeStorage.setItem('admin_session', JSON.stringify(currentUser));
+                        window.safeStorage.setItem('admin_session', JSON.stringify(currentUser));
                         if (window.navigateTo) window.navigateTo('settings');
                         return true;
                     } catch (e) {
@@ -448,8 +435,8 @@ async function verifyAuthCode() {
         // Verification message removed as per user request
         
         currentUser = tempLoginData;
-        safeStorage.setItem('admin_session', JSON.stringify(currentUser));
-        safeStorage.setItem('remembered_email', currentUser.email);
+        window.safeStorage.setItem('admin_session', JSON.stringify(currentUser));
+        window.safeStorage.setItem('remembered_email', currentUser.email);
         
         const greetingEl = document.getElementById('bio-admin-greeting');
         if (greetingEl && currentUser.full_name) {
@@ -500,7 +487,7 @@ async function toggleBiometricLock(checkbox) {
             });
 
             if (credential) {
-                safeStorage.setItem('scout-pulse-biometric-enabled', 'true');
+                window.safeStorage.setItem('scout-pulse-biometric-enabled', 'true');
                 showToast("تم تفعيل القفل بالبصمة بنجاح", "success");
             }
         } catch (err) {
@@ -509,13 +496,13 @@ async function toggleBiometricLock(checkbox) {
             checkbox.checked = false;
         }
     } else {
-        safeStorage.removeItem('scout-pulse-biometric-enabled');
+        window.safeStorage.removeItem('scout-pulse-biometric-enabled');
         showToast("تم إيقاف القفل بالبصمة", "info");
     }
 }
 
 async function requestBiometricAccess() {
-    const isBiometricEnabled = safeStorage.getItem('scout-pulse-biometric-enabled') === 'true';
+    const isBiometricEnabled = window.safeStorage.getItem('scout-pulse-biometric-enabled') === 'true';
     if (!isBiometricEnabled) {
         showToast("البصمة غير مفعلة، يرجى استخدام الرقم السري", "warning");
         return;
@@ -601,7 +588,7 @@ window.submitAdminRequest = async function() {
 
 function logout() {
     window.showConfirm("تسجيل الخروج", "هل أنت متأكد أنك تريد تسجيل الخروج من النظام؟", () => {
-        safeStorage.removeItem('admin_session');
+        window.safeStorage.removeItem('admin_session');
         location.reload();
     });
 }

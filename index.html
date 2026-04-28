@@ -23,7 +23,34 @@
     <script src="https://unpkg.com/lucide@latest"></script>
 
     <!-- Unified Auth System -->
-    <script src="js/auth-unified.js?v=2.5" defer></script>
+    <script>
+        // Global Storage Polyfill - Must run before ANY other script
+        window.safeStorage = (function() {
+            try {
+                const test = '__storage_test__';
+                localStorage.setItem(test, test);
+                localStorage.removeItem(test);
+                return {
+                    getItem: (k) => localStorage.getItem(k),
+                    setItem: (k, v) => localStorage.setItem(k, v),
+                    removeItem: (k) => localStorage.removeItem(k)
+                };
+            } catch (e) {
+                console.warn("Storage blocked by browser. Using in-memory fallback.");
+                const mem = {};
+                return {
+                    getItem: (k) => mem[k] || null,
+                    setItem: (k, v) => mem[k] = String(v),
+                    removeItem: (k) => delete mem[k]
+                };
+            }
+        })();
+        // Global override to catch old direct localStorage calls in other scripts
+        if (window.safeStorage.isFallback) {
+             // We can't easily override localStorage global, but safeStorage is now available
+        }
+    </script>
+    <script src="js/auth-unified.js?v=2.6" defer></script>
 </head>
 
 <body>
