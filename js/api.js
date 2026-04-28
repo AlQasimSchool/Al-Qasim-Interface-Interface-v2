@@ -15,12 +15,17 @@ export async function fetchYouTubeVideos() {
                 const title = item.snippet?.title || '';
                 return title !== 'Deleted video' && title !== 'Private video';
             })
-            .map(item => ({
-                id: item.contentDetails?.videoId || item.snippet?.resourceId?.videoId,
-                title: item.snippet?.title || 'بدون عنوان',
-                thumbnail: item.snippet?.thumbnails?.high?.url || '',
-                publishedAt: item.snippet?.publishedAt || '',
-            }));
+            .map(item => {
+                const pubDate = item.contentDetails?.videoPublishedAt || item.snippet?.publishedAt || '';
+                return {
+                    id: item.contentDetails?.videoId || item.snippet?.resourceId?.videoId,
+                    title: item.snippet?.title || 'بدون عنوان',
+                    thumbnail: item.snippet?.thumbnails?.high?.url || item.snippet?.thumbnails?.medium?.url || '',
+                    publishedAt: pubDate,
+                };
+            })
+            .filter(item => item.publishedAt) // Ensure we have a date
+            .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
         return state.youtubeVideosCache;
     } catch (err) {
         console.error('YT API Error:', err);
@@ -106,7 +111,8 @@ export async function fetchStudentsFromDoc() {
     if (state.studentsCache) return state.studentsCache;
 
     if (!window._supabase) {
-        throw new Error('Supabase client not initialized');
+        console.error('Supabase client not found on window object');
+        throw new Error('فشل الاتصال بقاعدة البيانات - يرجى تحديث الصفحة');
     }
 
     try {
@@ -117,20 +123,23 @@ export async function fetchStudentsFromDoc() {
 
         if (error) throw error;
 
+        if (!data) throw new Error('لا توجد بيانات طلاب في قاعدة البيانات');
+
         // Map Supabase 'scouts' table to our Student structure
         const students = data.map(s => ({
-            id: s.id,
-            name: s.name,
+            id: s.id || s.civil_id || 'N/A',
+            name: s.name || 'بدون اسم',
             nationality: s.nationality || 'سعودي',
-            civilId: s.id, // Assuming ID is the National ID
-            section: s.section || s.patrol || '-', // Use section or patrol
+            civilId: s.id || s.civil_id || '-',
+            section: s.section || s.patrol || '-',
             phone: s.phone || '-'
         }));
 
         state.studentsCache = students;
         return students;
     } catch (err) {
-        console.error('Students Supabase Error:', err);
+        console.error('Students Fetch Error:', err);
+        showToast("فشل تحميل بيانات الطلاب: " + (err.message || "خطأ غير معروف"), "error");
         throw err;
     }
 }

@@ -48,6 +48,13 @@ function showPage(pageId) {
 
 function init() {
     console.log("🚀 Initializing Scout System...");
+    
+    // Safety check: ensure unified auth has prioritized control
+    if (!localStorage.getItem('admin_session')) {
+        console.log("No active session. Waiting for authentication...");
+        return;
+    }
+
     // إظهار لوحة التحكم فوراً عند الفتح
     showPage('dashboard');
 

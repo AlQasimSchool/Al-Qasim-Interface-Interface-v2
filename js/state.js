@@ -14,6 +14,9 @@ export const state = {
     studentsCache: null
 };
 
+// Globalize for non-module scripts like auth-unified
+window.state = state;
+
 // State update helpers
 export function saveCustomLinks() {
     localStorage.setItem('scout_custom_links', JSON.stringify(state.customLinks));

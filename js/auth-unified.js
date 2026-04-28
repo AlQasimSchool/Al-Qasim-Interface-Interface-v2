@@ -40,65 +40,79 @@ async function checkSession() {
     const session = localStorage.getItem('admin_session');
     
     if (session) {
-        currentUser = JSON.parse(session);
-        
-        // Show loading in both potential overlays
-        if (authLoading) authLoading.classList.remove('hidden');
-        if (bioLoading) bioLoading.classList.remove('hidden');
-        if (authStep1) authStep1.classList.add('hidden');
-        if (bioContent) bioContent.classList.add('hidden');
-
-        // Fetch latest data to see if PIN is set
         try {
+            currentUser = JSON.parse(session);
+            
+            if (authLoading) authLoading.classList.remove('hidden');
+            if (bioLoading) bioLoading.classList.remove('hidden');
+            if (authStep1) authStep1.classList.add('hidden');
+            if (bioContent) bioContent.classList.add('hidden');
+
+            // Verify if admin still exists in DB
             const { data: admin, error } = await _supabase
                 .from('admins')
-                .select('*')
+                .select('full_name, email, pin')
                 .eq('email', currentUser.email)
-                .single();
+                .maybeSingle();
             
             if (admin) {
                 currentUser = admin;
                 localStorage.setItem('admin_session', JSON.stringify(currentUser));
-            }
-        } catch (e) { console.error("Session sync failed", e); }
+                
+                // Set UI greetings
+                const greetingEl = document.getElementById('bio-admin-greeting');
+                const subtitleEl = document.querySelector('#biometricOverlay .auth-subtitle');
+                if (greetingEl && currentUser.full_name) {
+                    greetingEl.textContent = `مرحباً ${currentUser.full_name.split(' ')[0]}`;
+                }
+                if (subtitleEl) {
+                    subtitleEl.textContent = 'أدخل الرقم السري للعبور أو استخدم البصمة';
+                }
 
-        // Personalize Greeting
-        const greetingEl = document.getElementById('bio-admin-greeting');
-        if (greetingEl && currentUser.full_name) {
-            greetingEl.textContent = `مرحباً ${currentUser.full_name.split(' ')[0]}`;
-        }
-
-        // Hide loaders after sync
-        if (authLoading) authLoading.classList.add('hidden');
-        if (bioLoading) bioLoading.classList.add('hidden');
-
-        // If PIN is set, show biometric/PIN overlay
-        if (currentUser.pin) {
-            authOverlay.classList.add('hidden');
-            bioOverlay.classList.remove('hidden');
-            if (bioContent) bioContent.classList.remove('hidden');
-            
-            const isBiometricEnabled = localStorage.getItem('scout-pulse-biometric-enabled') === 'true';
-            if (isBiometricEnabled) {
-                requestBiometricAccess();
+                if (currentUser.pin) {
+                    authOverlay.classList.add('hidden');
+                    bioOverlay.classList.remove('hidden');
+                    if (bioContent) bioContent.classList.remove('hidden');
+                    
+                    const isBiometricEnabled = localStorage.getItem('scout-pulse-biometric-enabled') === 'true';
+                    if (isBiometricEnabled) {
+                        requestBiometricAccess();
+                    }
+                } else {
+                    showAuthStep(1);
+                }
             } else {
-                const bioBtn = document.getElementById('bio-unlock-btn');
-                if (bioBtn) bioBtn.style.display = 'none';
+                // Admin removed from DB, logout
+                logout();
             }
-        } else {
-            // No PIN set, must use Email OTP
-            bioOverlay.classList.add('hidden');
-            authOverlay.classList.remove('hidden');
-            if (authStep1) authStep1.classList.remove('hidden');
-            // Auto-fill email and show OTP step if they were just here
-            const emailInput = document.getElementById('login-email');
-            if (emailInput) emailInput.value = currentUser.email;
+        } catch (e) { 
+            console.error("Session sync failed", e);
+            showAuthStep(1);
+        } finally {
+            if (authLoading) authLoading.classList.add('hidden');
+            if (bioLoading) bioLoading.classList.add('hidden');
         }
     } else {
-        // No session at all
         if (authLoading) authLoading.classList.add('hidden');
-        authOverlay.classList.remove('hidden');
-        if (authStep1) authStep1.classList.remove('hidden');
+        showAuthStep(1);
+    }
+}
+
+function showAuthStep(step) {
+    const authOverlay = document.getElementById('authOverlay');
+    const authStep1 = document.getElementById('auth-step-1');
+    const authStep2 = document.getElementById('auth-step-2');
+    const bioOverlay = document.getElementById('biometricOverlay');
+
+    authOverlay.classList.remove('hidden');
+    bioOverlay.classList.add('hidden');
+
+    if (step === 1) {
+        authStep1.classList.remove('hidden');
+        authStep2.classList.add('hidden');
+    } else {
+        authStep1.classList.add('hidden');
+        authStep2.classList.remove('hidden');
     }
 }
 
@@ -107,17 +121,21 @@ window.verifyPinCode = function() {
     
     if (currentUser && currentUser.pin && pin === currentUser.pin) {
         document.getElementById('biometricOverlay').classList.add('hidden');
-        showToast("✅ تم التحقق بنجاح", "success");
+        // Verification message removed as per user request
         
         if (window.pendingUnlock === 'students') {
             window.pendingUnlock = null;
-            if (window.unblurStudentsData) window.unblurStudentsData();
-            import('./state.js').then(({ state }) => state.isStudentsUnlocked = true);
+            if (window.state) {
+                window.state.isStudentsUnlocked = true;
+                if (window.renderStudents) window.renderStudents();
+                showToast("تم إظهار معلومات الطلاب بنجاح", "success");
+            }
         } else {
             if (window.updateGreeting) window.updateGreeting();
+            // Optional: generic login success message if needed, but keeping it empty as per previous "removed" comment if it's for general login
         }
     } else {
-        showToast("❌ الرقم السري غير صحيح", "error");
+        showToast("الرقم السري غير صحيح", "error");
         document.getElementById('lock-pin').value = '';
     }
 };
@@ -153,21 +171,10 @@ window.showActionPrompt = function(options) {
     confirmBtn.onclick = async () => {
         const val = input.value.trim();
         const result = await callback(val);
-        // If result is 'keep-open', we don't close (another modal is likely taking over)
         if (result !== false && result !== 'keep-open') {
             window.closePromptModal();
         }
     };
-};
-
-window.showAlert = function(title, subtitle, icon = 'fa-info-circle') {
-    window.showActionPrompt({
-        title,
-        subtitle,
-        icon,
-        hideInput: true,
-        callback: () => true
-    });
 };
 
 window.showConfirm = function(title, subtitle, callback) {
@@ -180,10 +187,18 @@ window.showConfirm = function(title, subtitle, callback) {
     });
 };
 
-window.requestPinChange = async function() {
-    if (!currentUser) return;
+
+
+/**
+ * Reusable function to verify sensitive admin actions via Email OTP
+ */
+window.verifyAdminAction = async function(callback) {
+    if (!currentUser) {
+        showToast("يجب تسجيل الدخول أولاً", "error");
+        return;
+    }
     
-    showToast("🕒 جاري إرسال كود التحقق لبريدك...", "info");
+    showToast("جاري إرسال كود التحقق لبريدك للتأكيد...", "info");
     
     try {
         const { error } = await _supabase.auth.signInWithOtp({
@@ -192,16 +207,15 @@ window.requestPinChange = async function() {
         
         if (error) throw error;
         
-        // Code sent, now show input immediately
         window.showActionPrompt({
-            title: "كود التحقق",
-            subtitle: "تم إرسال رمز التحقق لبريدك الإلكتروني، أدخله للمتابعة:",
-            icon: "fa-envelope-open-text",
+            title: "تأكيد الهوية",
+            subtitle: "تم إرسال رمز التحقق لبريدك الإلكتروني، أدخله لتأكيد هذا الإجراء:",
+            icon: "fa-shield-check",
             placeholder: "000000",
             callback: async (otp) => {
                 if (!otp) return false;
                 
-                showToast("🕒 جاري التحقق...", "info");
+                showToast("جاري التحقق...", "info");
                 try {
                     const { error: verifyError } = await _supabase.auth.verifyOtp({
                         email: currentUser.email,
@@ -210,58 +224,109 @@ window.requestPinChange = async function() {
                     });
                     
                     if (verifyError) {
-                        showToast("❌ الكود غير صحيح", "error");
+                        showToast("الكود غير صحيح", "error");
                         return false;
                     }
                     
-                    // Code correct, show second modal for new PIN
-                    // Return 'keep-open' so the modal doesn't flicker/close before next one shows
-                    setTimeout(() => {
-                        window.showActionPrompt({
-                            title: "الرقم السري الجديد",
-                            subtitle: "أدخل الرقم السري الجديد المكون من 4 أرقام:",
-                            icon: "fa-key",
-                            placeholder: "0000",
-                            type: "password",
-                            callback: async (newPin) => {
-                                if (!newPin || newPin.length !== 4 || isNaN(newPin)) {
-                                    showToast("⚠️ يجب إدخال 4 أرقام فقط", "error");
-                                    return false;
-                                }
-                                
-                                try {
-                                    const { error: updateError } = await _supabase
-                                        .from('admins')
-                                        .update({ pin: newPin })
-                                        .eq('email', currentUser.email);
-                                        
-                                    if (updateError) throw updateError;
-                                    
-                                    showToast("✅ تم تحديث الرقم السري بنجاح", "success");
-                                    currentUser.pin = newPin;
-                                    localStorage.setItem('admin_session', JSON.stringify(currentUser));
-                                    if (window.showPage) window.showPage('settings');
-                                    return true;
-                                } catch (e) {
-                                    console.error("PIN Update Error:", e);
-                                    showToast("❌ فشل التحديث: " + (e.message || "تأكد من وجود عمود pin في الجدول"), "error");
-                                    return false;
-                                }
-                            }
-                        });
-                    }, 100);
-                    
-                    return 'keep-open'; 
+                    // Success! Execute the actual action
+                    await callback();
+                    return true;
                 } catch (err) {
-                    showToast("❌ " + err.message, "error");
+                    showToast(err.message, "error");
                     return false;
                 }
             }
         });
         
     } catch (err) {
-        showToast("❌ " + err.message, "error");
+        showToast(err.message, "error");
     }
+};
+
+window.requestPinChange = async function() {
+    window.verifyAdminAction(async () => {
+        setTimeout(() => {
+            window.showActionPrompt({
+                title: "الرقم السري الجديد",
+                subtitle: "أدخل الرقم السري الجديد المكون من 4 أرقام:",
+                icon: "fa-key",
+                placeholder: "0000",
+                type: "password",
+                callback: async (newPin) => {
+                    if (!newPin || newPin.length !== 4 || isNaN(newPin)) {
+                        showToast("يجب إدخال 4 أرقام فقط", "error");
+                        return false;
+                    }
+                    
+                    try {
+                        const { error: updateError } = await _supabase
+                            .from('admins')
+                            .update({ pin: newPin })
+                            .eq('email', currentUser.email);
+                            
+                        if (updateError) throw updateError;
+                        
+                        showToast("تم تحديث الرقم السري بنجاح", "success");
+                        currentUser.pin = newPin;
+                        localStorage.setItem('admin_session', JSON.stringify(currentUser));
+                        if (window.navigateTo) window.navigateTo('settings');
+                        return true;
+                    } catch (e) {
+                        console.error("PIN Update Error:", e);
+                        showToast("فشل التحديث: " + (e.message || ""), "error");
+                        return false;
+                    }
+                }
+            });
+        }, 100);
+    });
+};
+
+window.approveAdminRequest = async function(requestId, name, email) {
+    window.verifyAdminAction(async () => {
+        try {
+            // 1. Add to admins table
+            const { error: insertError } = await _supabase
+                .from('admins')
+                .insert([{ full_name: name, email: email }]);
+
+            if (insertError) throw insertError;
+
+            // 2. Update request status
+            const { error: updateError } = await _supabase
+                .from('admin_requests')
+                .update({ status: 'approved' })
+                .eq('id', requestId);
+
+            if (updateError) throw updateError;
+
+            showToast("تم قبول الطلب وإضافة المسؤول بنجاح", "success");
+            window.renderAdminRequestsList();
+            window.renderAdminsList();
+        } catch (err) {
+            console.error("Approve error:", err);
+            showToast("حدث خطأ أثناء معالجة الطلب", "error");
+        }
+    });
+};
+
+window.rejectAdminRequest = async function(requestId) {
+    window.verifyAdminAction(async () => {
+        try {
+            const { error } = await _supabase
+                .from('admin_requests')
+                .update({ status: 'rejected' })
+                .eq('id', requestId);
+
+            if (error) throw error;
+
+            showToast("تم رفض الطلب", "info");
+            window.renderAdminRequestsList();
+        } catch (err) {
+            console.error("Reject error:", err);
+            showToast("حدث خطأ أثناء رفض الطلب", "error");
+        }
+    });
 };
 
 window.fallbackToEmail = function() {
@@ -277,7 +342,7 @@ async function sendAuthCode() {
     const btn = document.getElementById('sendCodeBtn');
 
     if (!email) {
-        showToast("⚠️ يرجى إدخال البريد الإلكتروني", "error");
+        showToast("يرجى إدخال البريد الإلكتروني", "error");
         return;
     }
 
@@ -285,7 +350,6 @@ async function sendAuthCode() {
     btn.innerHTML = '<span>جاري الإرسال...</span> <i class="fas fa-spinner fa-spin"></i>';
 
     try {
-        // 1. Check if admin exists in database
         const { data: admin, error: dbError } = await _supabase
             .from('admins')
             .select('*')
@@ -296,7 +360,6 @@ async function sendAuthCode() {
             throw new Error("عذراً، هذا البريد غير مسجل كمسؤول.");
         }
 
-        // 2. Request OTP from Supabase
         const { error: authError } = await _supabase.auth.signInWithOtp({
             email: email,
             options: { shouldCreateUser: true }
@@ -304,7 +367,7 @@ async function sendAuthCode() {
 
         if (authError) throw authError;
 
-        showToast("✅ تم إرسال رمز التحقق لبريدك الإلكتروني", "success");
+        showToast("تم إرسال رمز التحقق لبريدك الإلكتروني", "success");
         tempLoginData = admin;
         
         document.getElementById('auth-step-1').classList.add('hidden');
@@ -313,7 +376,7 @@ async function sendAuthCode() {
         startResendTimer();
     } catch (err) {
         console.error("Auth Error:", err);
-        showToast("❌ " + err.message, "error");
+        showToast(err.message, "error");
     } finally {
         btn.disabled = false;
         btn.innerHTML = '<span>إرسال رمز الدخول السريع</span> <i class="fas fa-envelope"></i>';
@@ -347,7 +410,7 @@ async function verifyAuthCode() {
     const btn = document.getElementById('verifyBtn');
 
     if (!token) {
-        showToast("⚠️ يرجى إدخال الرمز", "error");
+        showToast("يرجى إدخال الرمز", "error");
         return;
     }
 
@@ -363,26 +426,23 @@ async function verifyAuthCode() {
 
         if (error) throw error;
 
-        showToast("✅ تم التحقق بنجاح!", "success");
+        // Verification message removed as per user request
         
         currentUser = tempLoginData;
         localStorage.setItem('admin_session', JSON.stringify(currentUser));
         localStorage.setItem('remembered_email', currentUser.email);
         
-        // Update Personal Greeting
         const greetingEl = document.getElementById('bio-admin-greeting');
         if (greetingEl && currentUser.full_name) {
             greetingEl.textContent = `مرحباً ${currentUser.full_name.split(' ')[0]}`;
         }
 
         document.getElementById('authOverlay').classList.add('hidden');
-        
-        // Trigger UI update if needed
         if (window.updateGreeting) window.updateGreeting();
         
     } catch (err) {
         console.error("Verify Error:", err);
-        showToast("❌ الرمز غير صحيح أو انتهت صلاحيته", "error");
+        showToast("الرمز غير صحيح أو انتهت صلاحيته", "error");
     } finally {
         btn.disabled = false;
         btn.innerHTML = '<span>تأكيد الدخول</span> <i class="fas fa-check-circle"></i>';
@@ -393,7 +453,7 @@ async function toggleBiometricLock(checkbox) {
     if (checkbox.checked) {
         const available = await window.PublicKeyCredential?.isUserVerifyingPlatformAuthenticatorAvailable();
         if (!available) {
-            showToast("❌ جهازك لا يدعم البصمة أو الوجه في المتصفح", "error");
+            showToast("جهازك لا يدعم البصمة أو الوجه في المتصفح", "error");
             checkbox.checked = false;
             return;
         }
@@ -422,23 +482,23 @@ async function toggleBiometricLock(checkbox) {
 
             if (credential) {
                 localStorage.setItem('scout-pulse-biometric-enabled', 'true');
-                showToast("✅ تم تفعيل القفل بالبصمة بنجاح", "success");
+                showToast("تم تفعيل القفل بالبصمة بنجاح", "success");
             }
         } catch (err) {
             console.error(err);
-            showToast("❌ تم إلغاء تفعيل البصمة أو حدث خطأ", "error");
+            showToast("تم إلغاء تفعيل البصمة أو حدث خطأ", "error");
             checkbox.checked = false;
         }
     } else {
         localStorage.removeItem('scout-pulse-biometric-enabled');
-        showToast("🔓 تم إيقاف القفل بالبصمة", "info");
+        showToast("تم إيقاف القفل بالبصمة", "info");
     }
 }
 
 async function requestBiometricAccess() {
     const isBiometricEnabled = localStorage.getItem('scout-pulse-biometric-enabled') === 'true';
     if (!isBiometricEnabled) {
-        showToast("⚠️ البصمة غير مفعلة، يرجى استخدام الرقم السري", "warning");
+        showToast("البصمة غير مفعلة، يرجى استخدام الرقم السري", "warning");
         return;
     }
 
@@ -456,28 +516,69 @@ async function requestBiometricAccess() {
 
         if (assertion) {
             document.getElementById('biometricOverlay').classList.add('hidden');
-            showToast("✅ تم التحقق، مرحباً بك مجدداً", "success");
-            
             if (window.pendingUnlock === 'students') {
                 window.pendingUnlock = null;
                 if (window.unblurStudentsData) window.unblurStudentsData();
                 import('./state.js').then(({ state }) => state.isStudentsUnlocked = true);
+                showToast("تم إظهار معلومات الطلاب بنجاح", "success");
             } else {
+                showToast("تم التحقق، مرحباً بك مجدداً", "success");
                 if (window.updateGreeting) window.updateGreeting();
             }
         }
     } catch (err) {
         console.error(err);
-        // If cancelled or failed, keep overlay visible
-        showToast("⚠️ فشل التحقق، حاول مرة أخرى", "error");
+        showToast("فشل التحقق، حاول مرة أخرى", "error");
     }
 }
 
 function resetAuth() {
     document.getElementById('auth-step-1').classList.remove('hidden');
     document.getElementById('auth-step-2').classList.add('hidden');
+    const reqStep = document.getElementById('auth-step-request');
+    if (reqStep) reqStep.classList.add('hidden');
     tempLoginData = null;
 }
+
+window.showRequestStep = function() {
+    document.getElementById('auth-step-1').classList.add('hidden');
+    document.getElementById('auth-step-2').classList.add('hidden');
+    document.getElementById('auth-step-request').classList.remove('hidden');
+};
+
+window.submitAdminRequest = async function() {
+    const name = document.getElementById('req-name').value.trim();
+    const email = document.getElementById('req-email').value.trim().toLowerCase();
+    const btn = document.getElementById('submitRequestBtn');
+
+    if (!name || !email) {
+        showToast("يرجى إكمال جميع الحقول", "error");
+        return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<span>جاري إرسال الطلب...</span> <i class="fas fa-spinner fa-spin"></i>';
+
+    try {
+        // We use a dedicated table for requests to keep it clean
+        const { error } = await _supabase
+            .from('admin_requests')
+            .insert([{ full_name: name, email: email, status: 'pending' }]);
+
+        if (error) throw error;
+
+        showToast("تم إرسال طلبك بنجاح! سنقوم بمراجعته قريباً.", "success");
+        resetAuth();
+    } catch (err) {
+        console.error("Request Error:", err);
+        // Show specific error to help the user identify missing table or RLS issues
+        const errorMsg = err.message || "فشل في إرسال الطلب";
+        showToast(`خطأ: ${errorMsg}`, "error");
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<span>إرسال الطلب</span> <i class="fas fa-paper-plane"></i>';
+    }
+};
 
 function logout() {
     window.showConfirm("تسجيل الخروج", "هل أنت متأكد أنك تريد تسجيل الخروج من النظام؟", () => {
@@ -496,7 +597,7 @@ async function addNewAdmin() {
     const email = emailEl.value.trim().toLowerCase();
 
     if (!full_name || !email) {
-        showToast("⚠️ يرجى تعبئة جميع الحقول", "error");
+        showToast("يرجى تعبئة جميع الحقول", "error");
         return;
     }
 
@@ -507,15 +608,13 @@ async function addNewAdmin() {
 
         if (error) throw error;
 
-        showToast("✅ تم إضافة المسؤول بنجاح", "success");
+        showToast("تم إضافة المسؤول بنجاح", "success");
         nameEl.value = '';
         emailEl.value = '';
-        
-        // Refresh admins list if on settings page
         if (window.renderAdminsList) window.renderAdminsList();
     } catch (err) {
         console.error("Add Admin Error:", err);
-        showToast("❌ فشل إضافة المسؤول: " + err.message, "error");
+        showToast("فشل إضافة المسؤول: " + err.message, "error");
     }
 }
 
@@ -534,7 +633,6 @@ async function fetchAdmins() {
     }
 }
 
-// Student Data Synchronization (One-time or Update)
 async function syncStudentsToSupabase() {
     const studentsData = [
         { id: '1147826471', name: 'محمد عبدالرحمن أحمد الحلافي', nationality: 'سعودي', phone: '0541700823', section: '205' },
@@ -559,41 +657,175 @@ async function syncStudentsToSupabase() {
         { id: '1149250720', name: 'فهد عبد العزيز هويمل', nationality: 'سعودي', phone: '0564208987', section: '203' },
     ];
 
-    console.log("⏳ Starting Student Sync to Supabase...");
-    
     try {
         const { error } = await _supabase
             .from('scouts')
             .upsert(studentsData, { onConflict: 'id' });
 
         if (error) throw error;
-        console.log("✅ Student Sync Completed Successfully!");
-        showToast("✅ تم تحديث بيانات الطلاب في القاعدة", "success");
+        showToast("تم تحديث بيانات الطلاب في القاعدة", "success");
     } catch (err) {
         console.error("Sync Error:", err);
-        showToast("❌ فشل تحديث الطلاب: " + err.message, "error");
+        showToast("فشل التحديث: " + err.message, "error");
     }
 }
 
 function showToast(message, type = 'info') {
-    // Check if Pc Interface toast exists
-    const toast = document.getElementById('copy-toast');
-    if (toast) {
-        toast.innerHTML = `<i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i> ${message}`;
-        toast.className = 'copy-toast active';
-        setTimeout(() => toast.classList.remove('active'), 3000);
-    } else {
-        window.showAlert("تنبيه", message, type === 'error' ? 'fa-exclamation-triangle' : 'fa-info-circle');
+    let toast = document.getElementById('copy-toast');
+    if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'copy-toast';
+        document.body.appendChild(toast);
     }
+    
+    const icon = type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : type === 'warning' ? 'exclamation-triangle' : 'info-circle';
+    
+    toast.innerHTML = `<i class="fas fa-${icon}"></i> <span>${message}</span>`;
+    toast.className = `custom-toast active ${type}`;
+    
+    // Clear any existing timeout to prevent flickering
+    if (window.toastTimeout) clearTimeout(window.toastTimeout);
+    
+    window.toastTimeout = setTimeout(() => {
+        toast.classList.remove('active');
+    }, 3500);
 }
+
+window.showAlert = function(title, subtitle, icon = 'fa-info-circle') {
+    if (title === "تنبيه" || !title || title === "ScoutPulse") {
+        showToast(subtitle, 'info');
+    } else {
+        window.showActionPrompt({
+            title,
+            subtitle,
+            icon,
+            hideInput: true,
+            callback: () => true
+        });
+    }
+};
+
+window.closeBiometricOverlay = function() {
+    document.getElementById('biometricOverlay').classList.add('hidden');
+    document.getElementById('lock-pin').value = '';
+    window.pendingUnlock = null;
+};
+
+window.closePromptModal = function() {
+    document.getElementById('promptModal').classList.add('hidden');
+    const input = document.getElementById('prompt-input');
+    if (input) input.value = '';
+};
+
+// Update existing open function or add logic to show/hide X
+const originalOpenBio = window.openPasswordPopup;
+window.openPasswordPopup = function() {
+    const closeBtn = document.querySelector('#biometricOverlay .modal-close-btn');
+    if (closeBtn) closeBtn.style.display = 'flex'; // Show X for students
+    if (originalOpenBio) originalOpenBio();
+};
 
 window._supabase = _supabase;
 window.sendAuthCode = sendAuthCode;
 window.verifyAuthCode = verifyAuthCode;
-window.resetAuth = resetAuth;
+// Auth Background Slider Logic
+const authBgs = [
+    'imgs/image (1).png',
+    'imgs/image.png'
+];
+let currentAuthBgIndex = 0;
+let authBgInterval = null;
+
+window.updateAuthBg = function() {
+    const container = document.querySelector('.auth-right-side');
+    const counter = document.getElementById('auth-bg-counter');
+    if (!container || !counter) return;
+
+    // Apply fade effect if desired, but simple swap for now
+    container.style.backgroundImage = `url('${authBgs[currentAuthBgIndex]}')`;
+    counter.textContent = `0${currentAuthBgIndex + 1}/0${authBgs.length}`;
+};
+
+window.nextAuthBg = function() {
+    currentAuthBgIndex = (currentAuthBgIndex + 1) % authBgs.length;
+    window.updateAuthBg();
+    resetAuthBgInterval();
+};
+
+window.prevAuthBg = function() {
+    currentAuthBgIndex = (currentAuthBgIndex - 1 + authBgs.length) % authBgs.length;
+    window.updateAuthBg();
+    resetAuthBgInterval();
+};
+
+function resetAuthBgInterval() {
+    if (authBgInterval) clearInterval(authBgInterval);
+    authBgInterval = setInterval(window.nextAuthBg, 5000);
+}
+
+// Start slider when DOM ready
+document.addEventListener('DOMContentLoaded', () => {
+    window.updateAuthBg();
+    resetAuthBgInterval();
+});
+
 window.logout = logout;
+window.resetAuth = resetAuth;
 window.toggleBiometricLock = toggleBiometricLock;
 window.requestBiometricAccess = requestBiometricAccess;
 window.syncStudentsToSupabase = syncStudentsToSupabase;
 window.addNewAdmin = addNewAdmin;
 window.fetchAdmins = fetchAdmins;
+window.showToast = showToast;
+window.showRequestStep = window.showRequestStep;
+window.submitAdminRequest = window.submitAdminRequest;
+window.nextAuthBg = window.nextAuthBg;
+window.prevAuthBg = window.prevAuthBg;
+
+window.renderAdminRequestsList = async function() {
+    const container = document.getElementById('admin-requests-list-container');
+    if (!container) return;
+
+    container.innerHTML = '<div style="padding: 15px; text-align: center; opacity: 0.6; font-size: 0.8rem">جاري تحميل الطلبات...</div>';
+
+    try {
+        const { data, error } = await _supabase
+            .from('admin_requests')
+            .select('*')
+            .eq('status', 'pending')
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        if (!data || data.length === 0) {
+            container.innerHTML = '<p style="padding: 15px; text-align: center; opacity: 0.5; font-size: 0.85rem">لا توجد طلبات معلقة حالياً.</p>';
+            return;
+        }
+
+        container.innerHTML = data.map(req => `
+            <div class="admin-item-premium animate-in" style="flex-direction: column; align-items: stretch; gap: 12px; padding: 15px;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <div class="admin-item-icon" style="background: rgba(99, 102, 241, 0.1); color: var(--primary-light);"><i class="fas fa-user-clock"></i></div>
+                    <div class="admin-item-info">
+                        <strong>${req.full_name}</strong>
+                        <span>${req.email}</span>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 8px;">
+                    <button class="btn-premium-save" onclick="window.approveAdminRequest('${req.id}', '${req.full_name}', '${req.email}')" style="flex: 1; padding: 8px; font-size: 0.8rem; background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+                        <i class="fas fa-check"></i> قبول
+                    </button>
+                    <button class="btn-premium-save" onclick="window.rejectAdminRequest('${req.id}')" style="flex: 1; padding: 8px; font-size: 0.8rem; background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2);">
+                        <i class="fas fa-times"></i> رفض
+                    </button>
+                </div>
+            </div>
+        `).join('');
+    } catch (err) {
+        console.error("Fetch requests error:", err);
+        container.innerHTML = '<p style="color: #ef4444; font-size: 0.8rem; text-align: center;">خطأ في تحميل البيانات</p>';
+    }
+};
+
+
+

@@ -4,10 +4,10 @@ import { fetchWeather } from './api.js';
 import { getWeatherIcon } from './utils.js';
 import { state, saveDocsViewMode } from './state.js';
 import { initCalendar, selectedDay, calDate, calEvents } from './calendar.js';
-import { renderSidebarTasks, addTask, toggleTask, deleteTask, loadTasks } from './tasks.js';
+import { renderDashboardTasks, addTask, toggleTask, deleteTask, loadTasks } from './tasks.js';
 import { trackClick } from './tracking.js';
 import { deleteCustomLink, saveCustomLink } from './links.js';
-import { STUDENTS_PASSWORD } from './students.js';
+
 
 document.addEventListener('DOMContentLoaded', async () => {
     // 1. Initial Navigation & UI
@@ -140,6 +140,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             openPasswordPopup();
         }
 
+        // Students print
+        if (e.target.closest('#print-students-btn')) {
+            window.openPrintModal();
+        }
+
         // Sidebar Tasks
         if (e.target.closest('#add-sidebar-task') || e.target.closest('#add-sidebar-note')) {
             const isTask = e.target.closest('#add-sidebar-task');
@@ -269,34 +274,35 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // 3.1 Long Press Logic for Students
     let longPressTimer;
-    const LONG_PRESS_DURATION = 700;
+    const LONG_PRESS_DURATION = 400; // Softer duration for better UX
 
     const startLongPress = (e) => {
         const row = e.target.closest('.student-row');
         if (!row || !state.isStudentsUnlocked) return;
 
         // Feedback
-        row.style.transform = 'scale(0.98)';
-        row.style.backgroundColor = 'rgba(46, 125, 50, 0.05)';
+        row.style.transition = 'transform 0.2s';
+        row.style.transform = 'scale(0.97)';
+        row.style.backgroundColor = 'rgba(99, 102, 241, 0.08)';
 
         longPressTimer = setTimeout(() => {
-            const data = JSON.parse(row.dataset.student);
-            const textToCopy = `
-بيانات الطالب: ${data.name}
-الرقم: ${data.id}
-الجنسية: ${data.nationality}
-السجل المدني: ${data.civilId}
-الشعبة: ${data.section}
-الجوال: ${data.phone}
-            `.trim();
+            try {
+                const data = JSON.parse(row.dataset.student.replace(/&apos;/g, "'"));
+                const textToCopy = `الاسم: ${data.name}\nالسجل: ${data.id}\nالجنسية: ${data.nationality}\nالشعبة: ${data.section}\nالجوال: ${data.phone}`;
 
-            navigator.clipboard.writeText(textToCopy).then(() => {
-                showToast(`تم نسخ كامل بيانات: ${data.name}`);
-                row.style.transform = '';
-                row.style.backgroundColor = '';
-                // Haptic feedback if available
-                if (window.navigator.vibrate) window.navigator.vibrate(50);
-            });
+                navigator.clipboard.writeText(textToCopy).then(() => {
+                    showToast(`تم نسخ بيانات: ${data.name}`);
+                    row.style.transform = 'scale(1.02)'; // Quick pop feedback
+                    setTimeout(() => {
+                        row.style.transform = '';
+                        row.style.backgroundColor = '';
+                    }, 200);
+                    
+                    if (window.navigator.vibrate) window.navigator.vibrate([40, 30, 40]);
+                });
+            } catch (err) {
+                console.error("Long press copy failed", err);
+            }
         }, LONG_PRESS_DURATION);
     };
 
@@ -354,6 +360,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     async function openPasswordPopup() {
         window.pendingUnlock = 'students';
+        
+        // Update texts for student data opening
+        const titleEl = document.getElementById('bio-admin-greeting');
+        const subtitleEl = document.querySelector('#biometricOverlay .auth-subtitle');
+        if (titleEl) titleEl.textContent = 'إظهار معلومات الطلاب';
+        if (subtitleEl) subtitleEl.textContent = 'يرجى تأكيد الهوية للوصول لبيانات الطلاب الحساسة';
+
         document.getElementById('biometricOverlay').classList.remove('hidden');
         document.getElementById('lock-pin').value = '';
         
@@ -404,6 +417,102 @@ document.addEventListener('DOMContentLoaded', async () => {
             toast.classList.remove('active');
         }, 2500);
     }
+    window.showToast = showToast;
+
+    /* ===================== Student Copy & Selection Actions ===================== */
+    window.updateSelectionToolbar = function() {
+        const selected = document.querySelectorAll('.student-checkbox:checked');
+        const toolbar = document.getElementById('selection-toolbar');
+        const countSpan = document.getElementById('selected-count');
+        
+        if (selected.length > 0) {
+            if (countSpan) countSpan.textContent = selected.length;
+            toolbar?.classList.remove('hidden');
+        } else {
+            toolbar?.classList.add('hidden');
+        }
+    };
+
+    window.clearStudentSelection = function() {
+        document.querySelectorAll('.student-checkbox').forEach(cb => cb.checked = false);
+        window.updateSelectionToolbar();
+        const selectAll = document.getElementById('select-all-students');
+        if (selectAll) selectAll.checked = false;
+    };
+
+    window.copyStudentRow = function(id) {
+        if (!state.isStudentsUnlocked) {
+            openPasswordPopup();
+            return;
+        }
+
+        const row = document.querySelector(`.student-row[data-id="${id}"]`);
+        if (!row) return;
+
+        try {
+            const data = JSON.parse(row.dataset.student.replace(/&apos;/g, "'"));
+            const textToCopy = `الاسم: ${data.name}\nالسجل: ${data.id}\nالجنسية: ${data.nationality}\nالشعبة: ${data.section}\nالجوال: ${data.phone}`;
+            
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                showToast(`تم نسخ بيانات: ${data.name}`);
+            });
+        } catch (e) {
+            console.error('Copy failed', e);
+        }
+    };
+
+    window.copySelectedStudents = function() {
+        if (!state.isStudentsUnlocked) {
+            openPasswordPopup();
+            return;
+        }
+
+        const selected = document.querySelectorAll('.student-checkbox:checked');
+        if (selected.length === 0) return;
+
+        let fullText = "📋 كشف بيانات الطلاب المختارين\n";
+        fullText += "━━━━━━━━━━━━━━━━━━━━━━━━\n\n";
+        
+        selected.forEach((cb, index) => {
+            const row = cb.closest('.student-row');
+            if (row) {
+                try {
+                    const data = JSON.parse(row.dataset.student.replace(/&apos;/g, "'"));
+                    fullText += `👤 [${index + 1}] ${data.name}\n`;
+                    fullText += `🆔 السجل: ${data.id}  •  🏫 الشعبة: ${data.section}\n`;
+                    fullText += `📱 الجوال: ${data.phone}\n`;
+                    if (index < selected.length - 1) {
+                        fullText += "────────────────────────\n";
+                    }
+                } catch (e) {
+                    console.error("Error parsing student data for bulk copy", e);
+                }
+            }
+        });
+
+        fullText += "\n━━━━━━━━━━━━━━━━━━━━━━━━\n";
+        fullText += "تم التصدير من واجهة القاسم الذكية";
+
+        navigator.clipboard.writeText(fullText).then(() => {
+            showToast(`تم نسخ بيانات ${selected.length} طالب بنجاح`);
+            window.clearStudentSelection();
+        });
+    };
+
+    window.printSelectedStudents = function() {
+        if (!state.isStudentsUnlocked) {
+            openPasswordPopup();
+            return;
+        }
+
+        const selected = Array.from(document.querySelectorAll('.student-checkbox:checked'));
+        if (selected.length === 0) return;
+
+        const studentIds = selected.map(cb => cb.dataset.id);
+        const studentsToPrint = state.studentsCache.filter(s => studentIds.includes(s.id));
+        
+        window.openPrintModal(studentsToPrint);
+    };
 
 
     // 4. Input Events
@@ -497,26 +606,50 @@ document.addEventListener('DOMContentLoaded', async () => {
 import { fetchDriveFiles, fetchYouTubeVideos } from './api.js';
 
 async function initGlobalWeather() {
-    const weatherBox = document.getElementById('header-weather');
-    if (!weatherBox) return;
+    const headerBox = document.getElementById('header-weather');
+    const dashboardBox = document.getElementById('dashboard-weather');
+    if (!headerBox && !dashboardBox) return;
 
-    const data = await fetchWeather();
-    if (data && data.current_weather) {
-        const w = data.current_weather;
-        const hour = new Date().getHours();
-        const isNight = hour >= 18 || hour <= 5;
+    try {
+        const data = await fetchWeather();
+        if (data && data.current_weather) {
+            const w = data.current_weather;
+            const hour = new Date().getHours();
+            const isNight = hour >= 18 || hour <= 5;
 
-        // Map codes to icons with day/night awareness
-        let icon = getWeatherIcon(w.weathercode);
-        if (isNight && icon === 'fa-sun') icon = 'fa-moon';
-        if (isNight && icon === 'fa-cloud-sun') icon = 'fa-cloud-moon';
+            // Map codes to icons with day/night awareness
+            let icon = getWeatherIcon(w.weathercode);
+            if (isNight && icon === 'fa-sun') icon = 'fa-moon';
+            if (isNight && icon === 'fa-cloud-sun') icon = 'fa-cloud-moon';
 
-        weatherBox.innerHTML = `
-            <div class="weather-content animate-fade">
-                <i class="fas ${icon}" style="color: ${isNight ? '#94a3b8' : '#f1c40f'}"></i>
-                <span class="temp">${Math.round(w.temperature)}°C</span>
-                <span class="city">الدمام</span>
-            </div>
-        `;
+            const html = `
+                <div class="weather-content animate-fade">
+                    <i class="fas ${icon}" style="color: ${isNight ? '#94a3b8' : '#f1c40f'}"></i>
+                    <span class="temp">${Math.round(w.temperature)}°C</span>
+                    <span class="city">الدمام</span>
+                </div>
+            `;
+            
+            if (headerBox) {
+                headerBox.innerHTML = html;
+                headerBox.classList.add('loaded');
+            }
+            if (dashboardBox) {
+                dashboardBox.innerHTML = html;
+                dashboardBox.classList.add('loaded');
+            }
+        } else {
+            throw new Error('No weather data');
+        }
+    } catch (err) {
+        const errHtml = '<div class="weather-content"><span style="opacity:0.5; font-size:0.8rem">الطقس غير متاح</span></div>';
+        if (headerBox) {
+            headerBox.innerHTML = errHtml;
+            headerBox.classList.add('loaded');
+        }
+        if (dashboardBox) {
+            dashboardBox.innerHTML = errHtml;
+            dashboardBox.classList.add('loaded');
+        }
     }
 }

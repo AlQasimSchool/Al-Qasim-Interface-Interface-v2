@@ -5,7 +5,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Al-Qasim Interface</title>
-    <meta name="description" content="واجهة إدارة مركزية لمجموعة الكشافة — مستندات، مقاطع، روابط مفيدة">
 
     <link rel="icon" href="ico.png" type="image/png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -30,55 +29,121 @@
 <body>
     <!-- Authentication Overlay (Unified) -->
     <!-- Authentication Overlay (Unified) -->
+    <!-- Authentication Overlay (Unified) -->
     <div id="authOverlay" class="auth-overlay">
-        <div class="auth-card animate-in">
-            <div class="auth-header">
-                <div class="auth-shield-box">
-                    <i class="fas fa-user-shield"></i>
+        <div class="auth-split-container">
+            <!-- Left Side: Content & Branding -->
+            <div class="auth-left-side">
+                <div class="auth-branding">
+                    <img src="ico.png" alt="Logo" class="auth-logo-img">
+                    <span class="auth-brand-name">Al-Qasim Interface</span>
                 </div>
-                <h2 class="auth-title">نظام الدخول الموحد</h2>
-                <p class="auth-subtitle">يرجى تأكيد هويتك للوصول إلى لوحة التحكم</p>
+                
+                <div class="auth-welcome-text">
+                    <p class="auth-top-label">نظام إدارة المحتوى الذكي</p>
+                    <h1 class="auth-main-heading">التحكم الكامل <br> في متناول يدك.</h1>
+                    <p class="auth-description">بوابتك لإدارة شؤون كشافة عبدالرحمن بن القاسم بكل سهولة وأمان.</p>
+                </div>
+
+                <div class="auth-request-section">
+                    <p>ليس لديك حساب مسؤول؟</p>
+                    <button class="request-account-link" onclick="window.showRequestStep()">طلب حساب مسؤول الآن ←</button>
+                </div>
+
+                <div class="auth-footer-minimal">
+                     جميع الحقوق محفوظة | القسم التقني لكاشفة عبدالرحمن بن القاسم
+                </div>
             </div>
 
-            <div id="auth-loading-state" class="auth-loading-state">
-                <div class="spinner"></div>
-                <p>جاري التحقق من حالة الاتصال...</p>
-            </div>
+            <!-- Right Side: Hero & Login Card -->
+            <div class="auth-right-side" style="background-image: url('imgs/image (1).png');">
+                <div class="auth-card animate-in">
+                    <div id="auth-loading-state" class="auth-loading-state">
+                        <div class="spinner"></div>
+                        <p>جاري التحقق من الجلسة...</p>
+                    </div>
 
-            <div id="auth-step-1" class="hidden">
-                <div class="auth-input-group">
-                    <label>البريد الإلكتروني</label>
-                    <div class="input-wrapper">
-                        <input type="email" id="login-email" placeholder="amro.motawa@gmail.com">
-                        <i class="fas fa-envelope input-icon-end"></i>
+                    <!-- Step 1: Email -->
+                    <div id="auth-step-1" class="hidden">
+                        <h2 class="auth-card-title">تسجيل الدخول</h2>
+                        <p class="auth-card-subtitle">أدخل بريدك الإلكتروني للمتابعة</p>
+                        
+                        <div class="auth-input-group">
+                            <label>البريد الإلكتروني</label>
+                            <div class="input-wrapper">
+                                <input type="email" id="login-email" placeholder="example@gmail.com">
+                                <i class="fas fa-envelope input-icon-end"></i>
+                            </div>
+                        </div>
+                        
+                        <button id="sendCodeBtn" class="auth-btn-modern" onclick="sendAuthCode()">
+                            <span>إرسال رمز الدخول</span>
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+
+                    <!-- Step 2: OTP -->
+                    <div id="auth-step-2" class="hidden">
+                        <h2 class="auth-card-title">رمز التحقق</h2>
+                        <p class="auth-card-subtitle">تم إرسال الرمز إلى بريدك الإلكتروني</p>
+                        
+                        <div class="auth-input-group">
+                            <label>أدخل الرمز (OTP)</label>
+                            <div class="input-wrapper">
+                                <input type="text" id="login-otp" placeholder="••••••••" maxlength="8">
+                                <i class="fas fa-shield-alt input-icon-end"></i>
+                            </div>
+                        </div>
+                        
+                        <div class="auth-actions-row">
+                            <button id="resendCodeBtn" class="resend-btn" onclick="sendAuthCode()">إعادة إرسال</button>
+                            <button class="back-btn" onclick="resetAuth()">رجوع</button>
+                        </div>
+                        
+                        <button id="verifyBtn" class="auth-btn-modern success" onclick="verifyAuthCode()">
+                            <span>تأكيد الدخول</span>
+                            <i class="fas fa-check-circle"></i>
+                        </button>
+                    </div>
+
+                    <!-- Step 3: Request Account -->
+                    <div id="auth-step-request" class="hidden">
+                        <h2 class="auth-card-title">طلب حساب جديد</h2>
+                        <p class="auth-card-subtitle">سيتم مراجعة طلبك من قبل الإدارة</p>
+                        
+                        <div class="auth-input-group">
+                            <label>الاسم الكامل</label>
+                            <div class="input-wrapper">
+                                <input type="text" id="req-name" placeholder="أدخل اسمك الثلاثي">
+                                <i class="fas fa-user input-icon-end"></i>
+                            </div>
+                        </div>
+                        
+                        <div class="auth-input-group">
+                            <label>البريد الإلكتروني</label>
+                            <div class="input-wrapper">
+                                <input type="email" id="req-email" placeholder="example@gmail.com">
+                                <i class="fas fa-envelope input-icon-end"></i>
+                            </div>
+                        </div>
+
+                        <button id="submitRequestBtn" class="auth-btn-modern" onclick="window.submitAdminRequest()">
+                            <span>إرسال الطلب</span>
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                        
+                        <button class="text-btn" style="margin-top: 15px; width: 100%; text-align: center;" onclick="resetAuth()">العودة لتسجيل الدخول</button>
                     </div>
                 </div>
-                <button id="sendCodeBtn" class="auth-btn-modern" onclick="sendAuthCode()">
-                    <span>إرسال رمز الدخول السريع</span>
-                    <i class="fas fa-envelope"></i>
-                </button>
-            </div>
-
-            <div id="auth-step-2" class="hidden">
-                <div class="auth-input-group">
-                    <label>رمز التحقق (OTP)</label>
-                    <div class="input-wrapper">
-                        <input type="text" id="login-otp" placeholder="00000000" maxlength="8">
-                        <i class="fas fa-shield-alt input-icon-end"></i>
+                
+                <!-- Floating Info (Interactive Slider) -->
+                <div class="auth-floating-info">
+                    <p id="auth-bg-counter">01/02</p>
+                    <div class="auth-nav-arrows">
+                        <i class="fas fa-chevron-right" onclick="window.nextAuthBg()"></i>
+                        <i class="fas fa-chevron-left" onclick="window.prevAuthBg()"></i>
                     </div>
                 </div>
-                <div class="auth-actions-row">
-                    <button id="resendCodeBtn" class="resend-btn" onclick="sendAuthCode()">إعادة إرسال الرمز</button>
-                    <button class="back-btn" onclick="resetAuth()">تغيير البريد</button>
-                </div>
-                <button id="verifyBtn" class="auth-btn-modern success" onclick="verifyAuthCode()">
-                    <span>تأكيد الدخول</span>
-                    <i class="fas fa-check-circle"></i>
-                </button>
-            </div>
-
-            <div class="auth-footer">
-                جميع العمليات مراقبة ومسجلة لأغراض أمنية
             </div>
         </div>
     </div>
@@ -86,6 +151,9 @@
     <!-- Lock Screen (Biometric / PIN) -->
     <div id="biometricOverlay" class="biometric-overlay hidden">
         <div class="bio-card animate-in">
+            <button class="modal-close-btn" onclick="window.closeBiometricOverlay()" title="إغلاق">
+                <i class="fas fa-times"></i>
+            </button>
             <div class="auth-shield-box" style="margin-bottom: 24px;">
                 <i class="fas fa-lock"></i>
             </div>
@@ -125,6 +193,9 @@
     <!-- Unified Prompt Modal (Premium Alternative to prompt/alert) -->
     <div id="promptModal" class="biometric-overlay hidden">
         <div class="bio-card animate-in">
+            <button class="modal-close-btn" onclick="window.closePromptModal()" title="إغلاق">
+                <i class="fas fa-times"></i>
+            </button>
             <div id="prompt-icon-box" class="auth-shield-box" style="margin-bottom: 20px;">
                 <i class="fas fa-shield-alt"></i>
             </div>
@@ -162,12 +233,9 @@
         <aside class="sidebar">
             <div class="sidebar-brand">
                 <div class="logo-icon">
-                    <img src="ico.png" alt="Logo" style="width:100%;height:100%;object-fit:contain;">
+                    <img src="ico.png" alt="Logo">
                 </div>
-                <h2>
-                    Al-Qasim Interface
-                    <small>إدارة المهام والأنشطة الكشفية</small>
-                </h2>
+                <h2>Al-Qasim Interface</h2>
             </div>
 
             <nav class="sidebar-nav">
@@ -188,7 +256,7 @@
                     <span>التقارير</span>
                 </a>
                 <a class="nav-item" data-page="students">
-                    <i class="fas fa-users"></i>
+                    <i class="fas fa-eye"></i>
                     <span>الطلاب</span>
                 </a>
                 <a class="nav-item" data-page="links">
@@ -196,7 +264,7 @@
                     <span>روابط تهمنا</span>
                 </a>
                 <a class="nav-item" data-page="calendar">
-                    <i class="fas fa-calendar-alt"></i>
+                    <i class="fas fa-bell"></i>
                     <span>التقويم</span>
                 </a>
                 <a class="nav-item external" href="ScoutLog/log.html">
@@ -208,46 +276,20 @@
                     <span>الإعدادات</span>
                 </a>
                 <div class="sidebar-divider" style="height: 1px; background: var(--glass-border); margin: 10px 0;"></div>
-                <a class="nav-item" id="pin-sidebar-btn" title="تثبيت القائمة">
-                    <i class="fas fa-thumbtack"></i>
-                    <span>تثبيت القائمة</span>
-                </a>
                 <a class="nav-item logout-nav-item" onclick="window.logout()" style="color: #ef4444;">
                     <i class="fas fa-sign-out-alt"></i>
                     <span>تسجيل الخروج</span>
                 </a>
             </nav>
 
-            <div class="sidebar-tasks-container">
-                <!-- Tasks will be injected here by tasks.js -->
-            </div>
 
 
         </aside>
 
         <!-- ===== Main Content Area ===== -->
         <main class="main">
-            <header class="app-header" style="background: transparent; border: none; box-shadow: none; display: flex; justify-content: space-between; gap: 20px; padding: 0;">
-                <!-- Search Island - Compact -->
-                <div class="header-search" style="width: 250px; background: var(--glass-bg-strong); border: 1px solid var(--glass-border); border-radius: 14px; padding: 8px 16px; display: flex; align-items: center; gap: 10px; backdrop-filter: blur(8px);">
-                    <i class="fas fa-search" style="color: var(--text-secondary); font-size: 0.9rem;"></i>
-                    <input type="text" id="global-search" placeholder="بحث سريع..." style="background: transparent; border: none; outline: none; color: white; width: 100%; font-family: 'Cairo', sans-serif; font-size: 0.85rem;">
-                    <div id="search-results" class="search-results-floating"></div>
-                </div>
-
-                <!-- Info Island - Compact -->
-                <div class="header-right" style="background: var(--glass-bg-strong); border: 1px solid var(--glass-border); border-radius: 14px; padding: 8px 16px; backdrop-filter: blur(8px); display: flex; align-items: center; gap: 12px;">
-                    <a href="ScoutLog/log.html" class="header-attendance-btn" title="الذهاب لصفحة التحضير" style="color: var(--primary-light); cursor: pointer; display: flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 8px; background: rgba(99, 102, 241, 0.1); transition: all 0.2s;">
-                        <i class="fas fa-clipboard-check"></i>
-                    </a>
-                    <div id="header-weather" class="header-weather" style="display: flex; align-items: center; gap: 6px; font-size: 0.85rem;">
-                        <!-- Weather injected by weather.js -->
-                    </div>
-                    <div style="width: 1px; height: 16px; background: var(--glass-border);"></div>
-                    <div id="header-clock" class="header-clock" style="font-weight: 700; color: var(--primary-light); font-size: 0.9rem; min-width: 80px; text-align: center;">
-                        <span class="time">--:--:--</span>
-                    </div>
-                </div>
+            <header class="app-header">
+                <!-- Header is now empty/minimal as weather/clock moved to dashboard widgets -->
             </header>
 
             <!-- Page Specific Content -->
@@ -271,15 +313,16 @@
             </a>
 
             <div class="nav-add-btn" id="nav-center-btn" data-page="calendar">
-                <i class="fas fa-calendar-alt"></i>
+                <i class="fas fa-bell"></i>
+                <span>التقويم</span>
             </div>
 
-            <a class="nav-item" data-page="media">
-                <i class="fas fa-play-circle"></i>
-                <span>المرئيات</span>
+            <a class="nav-item" data-page="links">
+                <i class="fas fa-link"></i>
+                <span>الروابط</span>
             </a>
             <a class="nav-item" data-page="students">
-                <i class="fas fa-users"></i>
+                <i class="fas fa-eye"></i>
                 <span>الطلاب</span>
             </a>
         </nav>

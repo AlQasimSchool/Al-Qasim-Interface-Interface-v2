@@ -3,7 +3,7 @@ import { formatDate, getFileType, getFileTypeName, getFileIcon, getFileOpenUrl }
 import { getMostOpened } from './tracking.js';
 import { CONFIG } from './config.js';
 import { DEFAULT_LINKS } from './data.js';
-import { STUDENTS } from './students.js'; // Added this import
+
 
 export const templates = {
     /* ===================== الرئيسية ===================== */
@@ -15,14 +15,12 @@ export const templates = {
 
         if (opened.length > 0) {
             mostOpenedHtml = `
-                <div class="most-opened-section animate-in" style="margin-top: 28px; margin-bottom: 28px">
+                <div class="dashboard-section animate-in">
                     <h3 class="section-title">الوصول الذكي (الأكثر استخداماً)</h3>
                     <div class="agenda-list">
                         ${opened.map(item => {
                 const typeLabel = item.type === 'video' ? 'فيديو' : item.type === 'link' ? 'رابط' : item.type === 'pdf' ? 'تقرير' : 'مستند';
                 const colorClass = item.type === 'video' ? 'red' : item.type === 'link' ? 'blue' : item.type === 'pdf' ? 'purple' : 'brown';
-
-                // Fallback icon if missing in storage (Old data)
                 let iconClass = item.icon || 'fas fa-file-alt';
 
                 return `
@@ -44,75 +42,114 @@ export const templates = {
         }
 
         return `
-            <div class="page-section animate-fade">
-                <div class="dashboard-header-flex">
-                    <div class="page-header">
-                        <h1><i class="fas fa-hand-wave" style="margin-left:10px;color:var(--primary)"></i>أهلاً بعودتك، ${firstName}</h1>
-                        <p>سعيدون برؤيتك مجدداً في لوحة التحكم الخاصة بك.</p>
+            <div class="page-section dashboard-page">
+                <!-- Hero Widget: Time & Weather -->
+                <div class="hero-widget animate-fade">
+                    <div class="hero-left">
+                        <div id="dashboard-clock" class="dashboard-clock">
+                            <span class="time">--:--:--</span>
+                            <span class="date">${new Date().toLocaleDateString('ar-SA', { weekday: 'long', day: 'numeric', month: 'long' })}</span>
+                        </div>
+                        <h1>أهلاً بعودتك، ${firstName}</h1>
+                        <p>لوحة التحكم المركزية - واجهة القاسم الذكية</p>
+                    </div>
+                    <div id="dashboard-weather" class="dashboard-weather-widget">
+                        <!-- Weather Injected Here -->
+                        <div class="loading-weather"><div class="spinner-small"></div></div>
                     </div>
                 </div>
 
-                <div class="stats-row">
-                    <div class="stat-widget animate-in stagger-1">
-                        <div class="stat-icon card-icon green"><i class="fas fa-file-alt"></i></div>
-                        <div class="stat-info"><h4 id="stat-docs">—</h4><span>مستند متاح</span></div>
-                    </div>
-                    <div class="stat-widget animate-in stagger-2">
-                        <div class="stat-icon card-icon brown"><i class="fas fa-video"></i></div>
-                        <div class="stat-info"><h4 id="stat-videos">—</h4><span>مقطع فيديو</span></div>
-                    </div>
-                    <div class="stat-widget animate-in stagger-3">
-                        <div class="stat-icon card-icon purple"><i class="fas fa-file-pdf"></i></div>
-                        <div class="stat-info"><h4 id="stat-reports">—</h4><span>تقرير</span></div>
-                    </div>
-                    <div class="stat-widget animate-in stagger-4">
-                        <div class="stat-icon card-icon blue"><i class="fas fa-link"></i></div>
-                        <div class="stat-info"><h4>10</h4><span>رابط مفيد</span></div>
-                    </div>
-                </div>
-
-                ${mostOpenedHtml}
-
-                <h3 class="section-title">الوصول السريع</h3>
-                <div class="card-grid">
-                    <div class="card animate-in stagger-1" data-nav="documents">
-                        <div class="card-icon brown"><i class="fas fa-folder-open"></i></div>
-                        <h3>المستندات</h3>
-                        <p class="card-desc">ملفات التدريب والسجلات والمخططات الكشفية.</p>
-                    </div>
-                    <div class="card animate-in stagger-2" data-nav="media">
-                        <div class="card-icon green"><i class="fas fa-play-circle"></i></div>
-                        <h3>المقاطع</h3>
-                        <p class="card-desc">شاهد آخر فيديوهات فعالياتنا التعليمية.</p>
-                    </div>
-                    <div class="card animate-in stagger-3" data-nav="reports">
-                        <div class="card-icon purple"><i class="fas fa-file-pdf"></i></div>
-                        <h3>التقارير</h3>
-                        <p class="card-desc">عرض وتحميل تقارير الفرقة بصيغة PDF.</p>
-                    </div>
-                    <div class="card animate-in stagger-4" data-nav="students">
-                        <div class="card-icon blue"><i class="fas fa-users"></i></div>
-                        <h3>الطلاب</h3>
-                        <p class="card-desc">بيان بأسماء أعضاء الفرقة الكشفية.</p>
-                    </div>
-                    <div class="card animate-in stagger-5" data-nav="links">
-                        <div class="card-icon blue"><i class="fas fa-compass"></i></div>
-                        <h3>الروابط</h3>
-                        <p class="card-desc">مواقع التطوع والاتحاد الكشفي.</p>
-                    </div>
-                    <div class="card animate-in stagger-6" data-nav="tasks_board" style="cursor: pointer; overflow: visible">
-                        <div class="card-icon green"><i class="fas fa-tasks"></i></div>
-                        <h3>المهام والملاحظات</h3>
-                        <p class="card-desc" style="margin-bottom: 12px">أضف وتابع مهامك وأفكارك الكشفية.</p>
-                        
-                        <div class="card-input-group">
-                            <input type="text" id="dashboard-task-input" placeholder="اكتب شيئاً...">
-                            <div class="card-input-btns btns">
-                                <button id="add-dash-note" title="إضافة ملاحظة"><i class="fas fa-sticky-note"></i> ملاحظة</button>
-                                <button id="add-dash-task" title="إضافة مهمة"><i class="fas fa-plus"></i> مهمة</button>
-                            </div>
+                <!-- Stats Row -->
+                <div class="stats-grid">
+                    <div class="stat-card animate-in stagger-1">
+                        <div class="stat-icon green"><i class="fas fa-file-alt"></i></div>
+                        <div class="stat-content">
+                            <h2 id="stat-docs">—</h2>
+                            <p>مستند متاح</p>
                         </div>
                     </div>
+                    <div class="stat-card animate-in stagger-2">
+                        <div class="stat-icon brown"><i class="fas fa-video"></i></div>
+                        <div class="stat-content">
+                            <h2 id="stat-videos">—</h2>
+                            <p>مقطع فيديو</p>
+                        </div>
+                    </div>
+                    <div class="stat-card animate-in stagger-3">
+                        <div class="stat-icon purple"><i class="fas fa-file-pdf"></i></div>
+                        <div class="stat-content">
+                            <h2 id="stat-reports">—</h2>
+                            <p>تقرير منجز</p>
+                        </div>
+                    </div>
+                    <div class="stat-card animate-in stagger-4">
+                        <div class="stat-icon blue"><i class="fas fa-users"></i></div>
+                        <div class="stat-content">
+                            <h2 id="stat-students">—</h2>
+                            <p>عضو كشفي</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dashboard-main-grid">
+                    <div class="grid-left">
+                        <h3 class="section-title">الوصول السريع</h3>
+                        <div class="quick-access-grid">
+                            <div class="q-card animate-in stagger-1" data-nav="documents">
+                                <div class="q-icon brown"><i class="fas fa-folder-open"></i></div>
+                                <span>المستندات</span>
+                            </div>
+                            <div class="q-card animate-in stagger-2" data-nav="media">
+                                <div class="q-icon red"><i class="fas fa-play-circle"></i></div>
+                                <span>المقاطع</span>
+                            </div>
+                            <div class="q-card animate-in stagger-3" data-nav="reports">
+                                <div class="q-icon purple"><i class="fas fa-file-pdf"></i></div>
+                                <span>التقارير</span>
+                            </div>
+                            <div class="q-card animate-in stagger-4" data-nav="students">
+                                <div class="q-icon blue"><i class="fas fa-eye"></i></div>
+                                <span>الطلاب</span>
+                            </div>
+                            <div class="q-card animate-in stagger-5" data-nav="links">
+                                <div class="q-icon cyan"><i class="fas fa-compass"></i></div>
+                                <span>الروابط</span>
+                            </div>
+                            <div class="q-card animate-in stagger-6" data-nav="calendar">
+                                <div class="q-icon orange"><i class="fas fa-bell"></i></div>
+                                <span>التقويم</span>
+                            </div>
+                            <div class="q-card animate-in stagger-7" onclick="window.location.href='ScoutLog/log.html'">
+                                <div class="q-icon teal"><i class="fas fa-clipboard-check"></i></div>
+                                <span>التحضير</span>
+                            </div>
+                            <div class="q-card animate-in stagger-8" data-nav="settings">
+                                <div class="q-icon gray"><i class="fas fa-cog"></i></div>
+                                <span>الإعدادات</span>
+                            </div>
+                        </div>
+
+                        ${mostOpenedHtml}
+                    </div>
+
+                    <div class="grid-right">
+                        <div class="dashboard-section animate-in">
+                            <h3 class="section-title">آخر ما تم نشره</h3>
+                            <div id="latest-yt-video"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dashboard-section animate-in" style="margin-top: 40px">
+                    <div class="section-header-flex">
+                        <h3 class="section-title"><i class="fas fa-bell" style="margin-left:8px;color:var(--primary)"></i>المهام اليومية والملاحظات</h3>
+                        <div class="header-actions">
+                            <button class="dash-action-btn" onclick="window.openNewTaskModal()">
+                                <i class="fas fa-plus"></i> مهمة
+                            </button>
+                        </div>
+                    </div>
+                    <div id="tasks-container-dashboard" class="dashboard-tasks-wrapper"></div>
                 </div>
             </div>
         `;
@@ -352,72 +389,99 @@ export const templates = {
     students: (studentsList = []) => {
         const isUnlocked = state.isStudentsUnlocked;
         const rows = studentsList.map(s => `
-    <tr class="student-row" data-name="${s.name}" data-student='${JSON.stringify(s)}'>
-                <td>${s.id}</td>
-                <td class="student-name">${s.name}</td>
-                <td class="student-sensitive"><span class="${isUnlocked ? '' : 'blurred'}">${s.nationality}</span></td>
-                <td class="student-sensitive"><span class="${isUnlocked ? '' : 'blurred'}">${s.civilId}</span></td>
-                <td class="student-sensitive"><span class="${isUnlocked ? '' : 'blurred'}">${s.section}</span></td>
-                <td class="student-sensitive"><span class="${isUnlocked ? '' : 'blurred'}">${s.phone}</span></td>
+            <tr class="student-row" data-name="${s.name}" data-id="${s.id}" data-student='${JSON.stringify(s).replace(/'/g, "&apos;")}'>
+                <td>
+                    <label class="custom-checkbox">
+                        <input type="checkbox" class="student-checkbox" data-id="${s.id}" onchange="window.updateSelectionToolbar()">
+                        <span class="checkmark"></span>
+                    </label>
+                </td>
+                <td class="student-name">
+                    <div style="display:flex; align-items:center; justify-content:space-between; width:100%">
+                        <span>${s.name}</span>
+                        <button class="row-copy-btn" onclick="window.copyStudentRow('${s.id}')" title="نسخ البيانات">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                    </div>
+                </td>
+                <td class="student-sensitive"><span class="${isUnlocked ? '' : 'blurred'}">${isUnlocked ? s.id : '********'}</span></td>
+                <td class="student-sensitive"><span class="${isUnlocked ? '' : 'blurred'}">${isUnlocked ? s.nationality : '********'}</span></td>
+                <td class="student-sensitive"><span class="${isUnlocked ? '' : 'blurred'}">${isUnlocked ? s.section : '********'}</span></td>
+                <td class="student-sensitive"><span class="${isUnlocked ? '' : 'blurred'}">${isUnlocked ? s.phone : '********'}</span></td>
             </tr>
-    `).join('');
+        `).join('');
 
         return `
-    <div class="page-section animate-fade" >
-            <div class="page-header sticky-header">
-                <div>
-                    <h1><i class="fas fa-users" style="margin-left:10px;color:var(--primary)"></i>الطلاب</h1>
-                    <p style="margin-top:4px">بيان بأسماء الفرقة الكشفية. المزامنة مفعلة مع Supabase.</p>
+            <div class="page-section animate-fade">
+                <div class="page-header sticky-header">
+                    <div>
+                        <h1 class="animate-fade-down"><i class="fas fa-eye" style="margin-left:12px;color:var(--primary)"></i>سجل الفرقة الكشفية</h1>
+                        <p class="animate-fade-up">إدارة بيانات الطلاب، طباعة الكشوفات، والتحكم في الخصوصية.</p>
+                    </div>
+                    <div class="header-actions">
+                        <button id="students-unlock-btn" class="glass-btn ${isUnlocked ? 'active' : ''}" title="${isUnlocked ? 'البيانات مفكوكة' : 'فك القفل'}" onclick="window.openPasswordPopup()">
+                            <i class="fas ${isUnlocked ? 'fa-unlock-alt' : 'fa-lock'}"></i> 
+                            <span>${isUnlocked ? 'تم فك القفل' : 'فك القفل'}</span>
+                        </button>
+                        <button id="print-students-btn" class="glass-btn primary" title="طباعة الكشوفات">
+                            <i class="fas fa-print"></i> <span>طباعة الكشوفات</span>
+                        </button>
+                        <button id="refresh-students" class="glass-btn" title="تحديث البيانات">
+                            <i class="fas fa-sync-alt"></i>
+                            <span>تحديث</span>
+                        </button>
+                    </div>
                 </div>
-                <div class="header-actions">
-                    <a href="https://docs.google.com/document/d/${CONFIG.STUDENTS_DOC_ID}/edit" target="_blank" class="glass-btn" title="فتح المستند الأصلي">
-                        <i class="fas fa-file-word"></i> <span>فتح الملف</span>
-                    </a>
-                    <button id="students-unlock-btn" class="glass-btn" title="فك القفل" onclick="window.openPasswordPopup()">
-                        <i class="fas fa-lock"></i> <span>فك القفل</span>
-                    </button>
-                    <button id="sync-students" class="btn-sync glass-btn" title="مزامنة مع Supabase" onclick="window.syncStudentsToSupabase()">
-                        <i class="fas fa-cloud-upload-alt"></i>
-                        <span>رفع البيانات</span>
-                    </button>
-                    <button id="refresh-students" class="btn-refresh glass-btn" title="تحديث البيانات">
-                        <i class="fas fa-sync-alt"></i>
-                        <span>تحديث</span>
-                    </button>
-                </div>
-            </div>
 
-            <div class="students-toolbar glass-card p-4" style="margin-bottom: 24px;">
-                <div class="students-search-box">
-                    <i class="fas fa-search"></i>
-                    <!-- Anti-autofill measures -->
-                    <input type="text" id="students-search" placeholder="ابحث بالاسم..." 
-                           autocomplete="off" 
-                           role="presentation"
-                           aria-autocomplete="none"
-                           name="search_${Math.random().toString(36).substring(7)}">
+                <!-- Selection Actions Toolbar (Sticky/Floating) -->
+                <div id="selection-toolbar" class="selection-toolbar hidden">
+                    <div class="selection-info">
+                        <span id="selected-count">0</span> سجل مختار
+                    </div>
+                    <div class="selection-actions">
+                        <button class="toolbar-btn" onclick="window.copySelectedStudents()">
+                            <i class="fas fa-copy"></i> <span>نسخ المختار</span>
+                        </button>
+                        <button class="toolbar-btn" onclick="window.printSelectedStudents()">
+                            <i class="fas fa-print"></i> <span>طباعة المختار</span>
+                        </button>
+                        <button class="toolbar-btn close" onclick="window.clearStudentSelection()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="students-toolbar glass-card p-4" style="margin-bottom: 24px;">
+                    <div class="students-search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="students-search" placeholder="ابحث بالاسم أو السجل..." autocomplete="off">
+                    </div>
+                </div>
+
+                <div class="students-table-wrapper glass-card">
+                    <table class="students-table">
+                        <thead>
+                            <tr>
+                                <th>
+                                    <label class="custom-checkbox">
+                                        <input type="checkbox" id="select-all-students">
+                                        <span class="checkmark"></span>
+                                    </label>
+                                </th>
+                                <th>الاسم</th>
+                                <th>السجل</th>
+                                <th>الجنسية</th>
+                                <th>الشعبة</th>
+                                <th>رقم الجوال</th>
+                            </tr>
+                        </thead>
+                        <tbody id="students-tbody">
+                            ${rows}
+                        </tbody>
+                    </table>
                 </div>
             </div>
-
-            <div class="students-table-wrapper glass-card">
-                <table class="students-table">
-                    <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>الاسم</th>
-                            <th>الجنسية</th>
-                            <th>السجل المدني</th>
-                            <th>الشعبة</th>
-                            <th>رقم الجوال</th>
-                        </tr>
-                    </thead>
-                    <tbody id="students-tbody">
-                        ${rows}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    `;
+        `;
     },
 
     /* ===================== لوحة المهام ===================== */
@@ -645,6 +709,18 @@ export const templates = {
                         </div>
                         <div id="admins-list-container" class="admins-list-premium">
                             <!-- Loaded via window.renderAdminsList -->
+                        </div>
+                    </div>
+
+                    <!-- Admin Requests Section -->
+                    <div class="glass-card settings-card animate-in" style="animation-delay: 0.25s">
+                        <div class="card-header-premium">
+                            <i class="fas fa-user-clock"></i>
+                            <h3>طلبات الانضمام</h3>
+                        </div>
+                        <p class="settings-hint-text">طلبات المسؤولين الجدد بانتظار الموافقة.</p>
+                        <div id="admin-requests-list-container" class="admins-list-premium">
+                            <!-- Loaded via window.renderAdminRequestsList -->
                         </div>
                     </div>
 
