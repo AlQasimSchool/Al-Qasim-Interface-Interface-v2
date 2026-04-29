@@ -2092,7 +2092,7 @@ input:checked + .slider-premium:before {
     content: '';
     position: absolute;
     inset: 0;
-    background: linear-gradient(rgba(2, 6, 23, 0.7), rgba(2, 6, 23, 0.9)); /* Stronger dark overlay */
+    background: linear-gradient(rgba(15, 23, 42, 0.6), rgba(15, 23, 42, 0.8)); /* Stronger dark overlay */
 }
 
 .auth-card {
