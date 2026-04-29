@@ -633,12 +633,12 @@ window.checkRegistrationStatus = async function() {
         const isClosed = data && (data.value === 'true' || data.value === true);
         window.registrationClosed = isClosed; // Global flag
 
-        const footer = document.querySelector('.auth-footer');
-        if (footer) {
-            footer.style.display = isClosed ? 'none' : 'block';
+        const requestSection = document.querySelector('.auth-request-section');
+        if (requestSection) {
+            requestSection.style.display = isClosed ? 'none' : 'block';
         }
         
-        // Also hide the specific button if it's outside the footer for some reason
+        // Also try to hide old IDs just in case
         const joinBtn = document.getElementById('show-request-btn');
         if (joinBtn) {
             joinBtn.style.display = isClosed ? 'none' : 'block';
