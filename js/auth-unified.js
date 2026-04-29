@@ -72,9 +72,11 @@ async function checkSession() {
                 if (currentUser.pin) {
                     authOverlay.classList.add('hidden');
                     bioOverlay.classList.remove('hidden');
-                    if (bioContent) bioContent.classList.add('hidden');
+                    if (bioContent) bioContent.classList.remove('hidden');
                     
-                    const isBiometricEnabled = window.safeStorage.getItem('scout-pulse-biometric-enabled') === 'true';
+                    // Hide X button if this is the initial app lock
+                    const closeBtn = document.querySelector('#biometricOverlay .modal-close-btn');
+                    if (closeBtn && !window.pendingUnlock) closeBtn.style.display = 'none';
                     if (isBiometricEnabled) {
                         requestBiometricAccess();
                     }
@@ -675,9 +677,14 @@ window.showAlert = function(title, subtitle, icon = 'fa-info-circle') {
 };
 
 window.closeBiometricOverlay = function() {
-    document.getElementById('biometricOverlay').classList.add('hidden');
-    document.getElementById('lock-pin').value = '';
-    window.pendingUnlock = null;
+    // Only allow closing if it's NOT the main app lock
+    if (window.pendingUnlock) {
+        document.getElementById('biometricOverlay').classList.add('hidden');
+        document.getElementById('lock-pin').value = '';
+        window.pendingUnlock = null;
+    } else {
+        showToast("يجب التحقق أولاً للمتابعة", "warning");
+    }
 };
 
 window.closePromptModal = function() {
@@ -687,11 +694,17 @@ window.closePromptModal = function() {
 };
 
 // Update existing open function or add logic to show/hide X
-const originalOpenBio = window.openPasswordPopup;
 window.openPasswordPopup = function() {
+    window.pendingUnlock = 'students';
     const closeBtn = document.querySelector('#biometricOverlay .modal-close-btn');
     if (closeBtn) closeBtn.style.display = 'flex'; // Show X for students
-    if (originalOpenBio) originalOpenBio();
+    
+    document.getElementById('biometricOverlay').classList.remove('hidden');
+    const pinInput = document.getElementById('lock-pin');
+    if (pinInput) {
+        pinInput.value = '';
+        pinInput.focus();
+    }
 };
 
 window._supabase = _supabase;
