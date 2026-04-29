@@ -1,5 +1,5 @@
 import { state } from './state.js';
-import { templates, buildFileItem, buildYouTubeVideoCard } from './ui.js';
+import { templates, buildFileItem, buildYouTubeVideoCard } from './ui.js?v=2';
 import { fetchDriveFiles, fetchYouTubeVideos, fetchReportFiles, fetchStudentsFromDoc } from './api.js';
 import { getTasks } from './tasks.js';
 import { initCalendar } from './calendar.js';
