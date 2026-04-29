@@ -150,6 +150,7 @@ export function navigateTo(pageId) {
             } else if (pageId === 'settings') {
                 if (window.renderAdminsList) window.renderAdminsList();
                 if (window.renderAdminRequestsList) window.renderAdminRequestsList();
+                if (window.renderAuditLogs) window.renderAuditLogs();
                 updateSidebarFooter();
             } else {
                 updateSidebarFooter();

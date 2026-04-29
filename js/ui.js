@@ -733,6 +733,18 @@ export const templates = {
                         </div>
                     </div>
 
+                    <!-- Audit Logs Section -->
+                    <div class="glass-card settings-card animate-in" style="animation-delay: 0.28s">
+                        <div class="card-header-premium">
+                            <i class="fas fa-history"></i>
+                            <h3>سجل نشاطات النظام (اليوم)</h3>
+                        </div>
+                        <p class="settings-hint-text">متابعة تحركات المدراء والإجراءات التي تمت خلال هذا اليوم.</p>
+                        <div id="audit-logs-container" class="admins-list-premium" style="max-height: 250px; overflow-y: auto;">
+                            <div class="loading-state"><div class="spinner-small"></div></div>
+                        </div>
+                    </div>
+
                     <div class="glass-card settings-card animate-in" style="animation-delay: 0.3s">
                         <div class="card-header-premium">
                             <i class="fas fa-database"></i>

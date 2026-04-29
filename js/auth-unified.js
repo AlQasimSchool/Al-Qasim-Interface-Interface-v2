@@ -1108,6 +1108,63 @@ window.renderAdminRequestsList = async function() {
         container.innerHTML = '<p style="color: #ef4444; font-size: 0.8rem; text-align: center;">خطأ في تحميل البيانات</p>';
     }
 };
+};
 
+// --- Audit Logs System ---
+window.logAdminAction = async function(action, details = '') {
+    try {
+        if (!currentUser) return;
+        const { error } = await _supabase
+            .from('audit_logs')
+            .insert([{ admin_email: currentUser.email, action, details }]);
+        if (error) console.error("Error logging action:", error);
+    } catch (err) {
+        console.error("Audit log error:", err);
+    }
+};
 
-
+window.renderAuditLogs = async function() {
+    const container = document.getElementById('audit-logs-container');
+    if (!container) return;
+    
+    container.innerHTML = '<div class="loading-state"><div class="spinner-small"></div></div>';
+    
+    try {
+        // Fetch only logs from today
+        const startOfDay = new Date();
+        startOfDay.setHours(0, 0, 0, 0);
+        
+        const { data, error } = await _supabase
+            .from('audit_logs')
+            .select('*')
+            .gte('created_at', startOfDay.toISOString())
+            .order('created_at', { ascending: false });
+            
+        if (error) throw error;
+        
+        if (!data || data.length === 0) {
+            container.innerHTML = '<p style="padding: 20px; text-align: center; opacity: 0.5; font-size: 0.85rem">لا توجد نشاطات مسجلة لهذا اليوم.</p>';
+            return;
+        }
+        
+        container.innerHTML = data.map(log => {
+            const timeStr = new Date(log.created_at).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' });
+            return `
+            <div class="admin-item-premium animate-in" style="margin-bottom: 10px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05);">
+                <div class="admin-item-icon" style="background: rgba(99, 102, 241, 0.1); color: var(--primary);"><i class="fas fa-history"></i></div>
+                <div class="admin-item-info">
+                    <strong>${log.action}</strong>
+                    <span style="font-size: 0.8rem; color: #ccc;">بواسطة: ${log.admin_email}</span>
+                    ${log.details ? `<span style="font-size: 0.75rem; opacity: 0.6; margin-top: 2px;">${log.details}</span>` : ''}
+                </div>
+                <div style="margin-right: auto; font-size: 0.75rem; opacity: 0.5;">
+                    ${timeStr}
+                </div>
+            </div>
+            `;
+        }).join('');
+    } catch (err) {
+        console.error("Error rendering logs:", err);
+        container.innerHTML = '<p style="color: #ef4444; text-align: center; font-size: 0.85rem; padding: 15px;">خطأ في جلب النشاطات</p>';
+    }
+};
