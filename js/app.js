@@ -398,15 +398,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
-        const row = document.querySelector(`.student-row[data-id="${id}"]`);
-        if (!row) return;
+        const student = state.studentsCache.find(s => s.id === id);
+        if (!student) return;
 
         try {
-            const data = JSON.parse(row.dataset.student.replace(/&apos;/g, "'"));
-            const textToCopy = `الاسم: ${data.name}\nالسجل: ${data.id}\nالجنسية: ${data.nationality}\nالشعبة: ${data.section}\nالجوال: ${data.phone}`;
+            const textToCopy = `الاسم: ${student.name}\nالسجل: ${student.id}\nالجنسية: ${student.nationality}\nالشعبة: ${student.section}\nالجوال: ${student.phone}`;
             
             navigator.clipboard.writeText(textToCopy).then(() => {
-                showToast(`تم نسخ بيانات: ${data.name}`);
+                showToast(`تم نسخ بيانات: ${student.name}`);
             });
         } catch (e) {
             console.error('Copy failed', e);
@@ -426,18 +425,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         fullText += "━━━━━━━━━━━━━━━━━━━━━━━━\n\n";
         
         selected.forEach((cb, index) => {
-            const row = cb.closest('.student-row');
-            if (row) {
-                try {
-                    const data = JSON.parse(row.dataset.student.replace(/&apos;/g, "'"));
-                    fullText += `👤 [${index + 1}] ${data.name}\n`;
-                    fullText += `🆔 السجل: ${data.id}  •  🏫 الشعبة: ${data.section}\n`;
-                    fullText += `📱 الجوال: ${data.phone}\n`;
-                    if (index < selected.length - 1) {
-                        fullText += "────────────────────────\n";
-                    }
-                } catch (e) {
-                    console.error("Error parsing student data for bulk copy", e);
+            const id = cb.dataset.id;
+            const student = state.studentsCache.find(s => s.id === id);
+            if (student) {
+                fullText += `👤 [${index + 1}] ${student.name}\n`;
+                fullText += `🆔 السجل: ${student.id}  •  🏫 الشعبة: ${student.section}\n`;
+                fullText += `📱 الجوال: ${student.phone}\n`;
+                if (index < selected.length - 1) {
+                    fullText += "────────────────────────\n";
                 }
             }
         });

@@ -389,7 +389,7 @@ export const templates = {
     students: (studentsList = []) => {
         const isUnlocked = state.isStudentsUnlocked;
         const rows = studentsList.map(s => `
-            <tr class="student-row" data-name="${s.name}" data-id="${s.id}" data-student='${JSON.stringify(s).replace(/'/g, "&apos;")}'>
+            <tr class="student-row" data-id="${s.id}" data-name="${s.name}">
                 <td>
                     <label class="custom-checkbox">
                         <input type="checkbox" class="student-checkbox" data-id="${s.id}">
