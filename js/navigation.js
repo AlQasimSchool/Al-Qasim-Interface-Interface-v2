@@ -518,31 +518,45 @@ function generatePrintDoc(students, columns, customTitle) {
         'nationality': 'الجنسية',
         'section': 'الشعبة',
         'phone': 'رقم الجوال',
-        'empty-check': 'التوقيع/الحالة'
+        'empty-check': 'الحالة'
     };
 
+    // Professional Print Header
     const headerHtml = `
-        <div class="print-doc-container" style="font-family: 'Cairo', 'Tajawal', sans-serif; direction: rtl; padding: 40px; color: #0f172a; background: #fff; margin: 0;">
-            <div class="print-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #6366f1; padding-bottom: 20px; margin-bottom: 30px;">
-                <div style="text-align: right; line-height: 1.6; flex: 1;">
-                    <h3 style="margin: 0; font-size: 0.9rem; font-weight: 700; color: #475569;">المملكة العربية السعودية</h3>
-                    <h3 style="margin: 0; font-size: 0.9rem; font-weight: 700; color: #475569;">وزارة التعليم</h3>
-                    <h3 style="margin: 0; font-size: 0.85rem; font-weight: 700; color: #64748b;">ثانوية عبد الرحمن بن القاسم</h3>
+        <div class="print-doc-container" style="font-family: 'Cairo', sans-serif; direction: rtl; padding: 20px; color: #000; background: #fff; margin: 0;">
+            <style>
+                @media print {
+                    @page { margin: 1cm; }
+                    body { background: white; }
+                    #print-section { display: block !important; position: absolute; left: 0; top: 0; width: 100%; }
+                    .no-print { display: none !important; }
+                    table { page-break-inside: auto; width: 100%; border-collapse: collapse; }
+                    tr { page-break-inside: avoid; page-break-after: auto; }
+                    thead { display: table-header-group; } /* Repeats header on every page */
+                    tfoot { display: table-footer-group; }
+                }
+                .print-table th { background: #f1f5f9 !important; -webkit-print-color-adjust: exact; border: 1px solid #000; padding: 8px 4px; font-weight: bold; font-size: 11px; }
+                .print-table td { border: 1px solid #000; padding: 6px 4px; font-size: 11px; text-align: center; }
+            </style>
+            
+            <div class="print-header" style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #000; padding-bottom: 15px; margin-bottom: 20px;">
+                <div style="text-align: right; line-height: 1.4; flex: 1;">
+                    <p style="margin: 0; font-size: 12px; font-weight: bold;">المملكة العربية السعودية</p>
+                    <p style="margin: 0; font-size: 12px; font-weight: bold;">وزارة التعليم</p>
+                    <p style="margin: 0; font-size: 11px;">إدارة تعليم منطقة مكة المكرمة</p>
+                    <p style="margin: 0; font-size: 11px;">ثانوية عبد الرحمن بن القاسم</p>
                 </div>
-                <div style="text-align: center; flex: 1.5;">
-                    <img src="ico.png" style="width: 70px; height: 70px; margin-bottom: 10px; object-fit: contain;">
-                    <h2 style="margin: 0; font-size: 1.8rem; font-weight: 900; color: #6366f1; letter-spacing: -0.5px;">${customTitle}</h2>
-                    <p style="margin: 0; font-size: 1.1rem; font-weight: 700; color: #64748b;">الفرقة الكشفية — العام 1447 هـ</p>
+                <div style="text-align: center; flex: 1.5; padding-top: 10px;">
+                    <h2 style="margin: 0; font-size: 20px; font-weight: 900; color: #000;">${customTitle}</h2>
+                    <p style="margin: 5px 0 0 0; font-size: 13px; font-weight: bold;">الفرقة الكشفية — العام الدراسي 1447 هـ</p>
                 </div>
-                <div style="text-align: left; line-height: 1.6; flex: 1;">
-                    <p style="margin: 0; font-weight: 700; font-size: 0.9rem;">التاريخ: ${new Date().toLocaleDateString('ar-EG')}</p>
-                    <p style="margin: 0; font-weight: 700; font-size: 0.9rem;">العدد: ${students.length} سجل</p>
-                    <div style="margin-top: 5px; display: inline-block; padding: 4px 12px; background: #eef2ff; color: #6366f1; border-radius: 8px; font-size: 0.75rem; font-weight: 800;">نسخة القادة - نظام القاسم</div>
+                <div style="text-align: left; line-height: 1.4; flex: 1;">
+                    <p style="margin: 0; font-size: 11px;">التاريخ: ${new Date().toLocaleDateString('ar-EG')}</p>
+                    <p style="margin: 0; font-size: 11px;">العدد الإجمالي: ${students.length} طالب</p>
                 </div>
             </div>
     `;
 
-    // Ensure 'name' is always first if selected
     const sortedCols = [...columns].sort((a, b) => {
         if (a === 'name') return -1;
         if (b === 'name') return 1;
@@ -550,23 +564,19 @@ function generatePrintDoc(students, columns, customTitle) {
     });
 
     const tableHtml = `
-            <div style="border: 1.5px solid #334155; border-radius: 8px; overflow: hidden; margin-top: 10px;">
-                <table style="width: 100%; border-collapse: collapse; direction: rtl; font-size: 0.85rem; table-layout: auto;">
+            <table class="print-table">
                 <thead>
-                    <tr style="background: #f1f5f9 !important; color: #1e293b !important; -webkit-print-color-adjust: exact; border-bottom: 2px solid #334155;">
-                        <th style="padding: 10px 5px; font-weight: 800; width: 30px; text-align: center; border-left: 1px solid #cbd5e1;">م</th>
-                        ${sortedCols.map(c => `
-                            <th style="padding: 10px 5px; font-weight: 800; text-align: ${c === 'name' ? 'right' : 'center'}; border-left: 1px solid #cbd5e1; white-space: nowrap;">
-                                ${columnLabels[c]}
-                            </th>`).join('')}
+                    <tr>
+                        <th style="width: 30px;">م</th>
+                        ${sortedCols.map(c => `<th>${columnLabels[c]}</th>`).join('')}
                     </tr>
                 </thead>
                 <tbody>
                     ${students.map((s, index) => `
-                        <tr style="background: ${index % 2 === 0 ? '#fff' : '#f8fafc'} !important; -webkit-print-color-adjust: exact; border-bottom: 1px solid #cbd5e1;">
-                            <td style="padding: 8px 5px; text-align: center; font-weight: 700; color: #475569; border-left: 1px solid #cbd5e1;">${index + 1}</td>
+                        <tr>
+                            <td style="font-weight: bold;">${index + 1}</td>
                             ${sortedCols.map(c => `
-                                <td style="padding: 8px 5px; text-align: ${c === 'name' ? 'right' : 'center'}; color: #0f172a; font-weight: ${c === 'name' ? '700' : '400'}; border-left: 1px solid #cbd5e1; ${c === 'name' ? 'white-space: nowrap;' : ''}">
+                                <td style="text-align: ${c === 'name' ? 'right' : 'center'}; font-weight: ${c === 'name' ? 'bold' : 'normal'}; padding-right: ${c === 'name' ? '8px' : '0'};">
                                     ${c === 'empty-check' ? '' : (s[c] || '-')}
                                 </td>
                             `).join('')}
@@ -574,25 +584,26 @@ function generatePrintDoc(students, columns, customTitle) {
                     `).join('')}
                 </tbody>
             </table>
-        </div>
 
-            <div style="display: flex; justify-content: space-between; margin-top: 60px; padding: 0 40px; text-align: center;">
-                <div style="width: 220px;">
-                    <p style="font-size: 1rem; font-weight: 800; margin-bottom: 45px; color: #475569;">قائد الفرقة الكشفية</p>
-                    <div style="border-bottom: 2px solid #6366f1; width: 100%; opacity: 0.3;"></div>
-                    <p style="margin-top: 8px; font-size: 0.8rem; color: #94a3b8;">الاسم والتوقيع</p>
+            <div style="display: flex; justify-content: space-around; margin-top: 50px; padding: 0 20px; text-align: center; page-break-inside: avoid;">
+                <div style="width: 200px;">
+                    <p style="font-size: 13px; font-weight: bold; margin-bottom: 50px;">قائد الفرقة الكشفية</p>
+                    <div style="border-bottom: 1px solid #000; width: 100%;"></div>
                 </div>
-                <div style="width: 220px;">
-                    <p style="font-size: 1rem; font-weight: 800; margin-bottom: 45px; color: #475569;">يعتمد،، مدير المدرسة</p>
-                    <div style="border-bottom: 2px solid #6366f1; width: 100%; opacity: 0.3;"></div>
-                    <p style="margin-top: 8px; font-size: 0.8rem; color: #94a3b8;">الختم والتوقيع الرسمي</p>
+                <div style="width: 200px;">
+                    <p style="font-size: 13px; font-weight: bold; margin-bottom: 50px;">مدير المدرسة</p>
+                    <div style="border-bottom: 1px solid #000; width: 100%;"></div>
                 </div>
-            </div>
-            <div style="margin-top: 50px; text-align: center; border-top: 1px solid #f1f5f9; padding-top: 15px;">
-                <p style="font-size: 0.7rem; color: #94a3b8; font-weight: 700;">تم إنشاء هذا التقرير آلياً بواسطة واجهة القاسم الذكية - نظام التحضير</p>
             </div>
         </div>
     `;
+
+    printSection.innerHTML = headerHtml + tableHtml;
+    
+    setTimeout(() => {
+        window.print();
+    }, 800);
+}
 
     printSection.innerHTML = headerHtml + tableHtml;
     
