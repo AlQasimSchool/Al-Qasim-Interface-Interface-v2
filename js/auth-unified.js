@@ -7,9 +7,9 @@ var SUPABASE_URL = 'https://unxhursbcavdaunuvbhr.supabase.co';
 var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVueGh1cnNiY2F2ZGF1bnV2YmhyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY5Mzg4NTksImV4cCI6MjA5MjUxNDg1OX0.56EwISYcShglg-Q_2thnrtJSAXMKkHO1Zmvo_ZC6c4w';
 var _supabase = window._supabase || supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-let currentUser = null;
-let tempLoginData = null;
-let resendInterval = null;
+var currentUser = null;
+var tempLoginData = null;
+var resendInterval = null;
 
 // Initialize Auth
 document.addEventListener('DOMContentLoaded', () => {

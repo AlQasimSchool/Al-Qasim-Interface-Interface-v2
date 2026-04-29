@@ -14,9 +14,9 @@ var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSI
 var _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // Authentication State
-let currentUser = null;
-let currentOTP = null;
-let tempLoginData = null;
+var currentUser = null;
+var currentOTP = null;
+var tempLoginData = null;
 
 const API_BASE = "/api";
 
