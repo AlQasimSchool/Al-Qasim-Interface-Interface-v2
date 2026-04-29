@@ -629,14 +629,23 @@ window.checkRegistrationStatus = async function() {
             .maybeSingle();
 
         if (error) throw error;
-        const isClosed = data?.value === 'true';
+        
+        // Handle both string 'true' and boolean true just in case
+        const isClosed = data && (data.value === 'true' || data.value === true);
         
         const joinBtn = document.getElementById('show-request-btn');
         if (joinBtn) {
-            joinBtn.style.display = isClosed ? 'none' : 'block';
+            // Hide the entire paragraph that contains the link
+            const footerPara = joinBtn.closest('p');
+            if (footerPara) {
+                footerPara.style.display = isClosed ? 'none' : 'block';
+            } else {
+                joinBtn.style.display = isClosed ? 'none' : 'block';
+            }
         }
         return isClosed;
     } catch (err) {
+        console.error("Check Reg Status Error:", err);
         return false;
     }
 };
