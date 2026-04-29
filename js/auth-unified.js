@@ -534,6 +534,9 @@ window.showRequestStep = function() {
     document.getElementById('auth-step-request').classList.remove('hidden');
 };
 
+// Temporary storage for signup data before OTP verification
+window.tempRegistrationData = null;
+
 window.submitAdminRequest = async function() {
     const name = document.getElementById('req-name').value.trim();
     const email = document.getElementById('req-email').value.trim().toLowerCase();
@@ -554,7 +557,7 @@ window.submitAdminRequest = async function() {
     btn.innerHTML = '<span>جاري المعالجة...</span> <i class="fas fa-spinner fa-spin"></i>';
 
     try {
-        // 1. Sign up user in Supabase Auth
+        // 1. Sign up user in Supabase Auth (This sends the OTP email)
         const { data: authData, error: authError } = await _supabase.auth.signUp({
             email,
             password,
@@ -563,21 +566,24 @@ window.submitAdminRequest = async function() {
             }
         });
 
-        if (authError) throw authError;
+        if (authError) {
+            // Handle case where user already exists but isn't confirmed or is already an admin
+            if (authError.message.includes("already registered")) {
+                throw new Error("هذا البريد مسجل مسبقاً.");
+            }
+            throw authError;
+        }
 
-        // 2. Add to admin_requests for manual approval
-        const { error: reqError } = await _supabase
-            .from('admin_requests')
-            .insert([{ 
-                full_name: name, 
-                email: email, 
-                status: 'pending' 
-            }]);
+        // Store data temporarily until OTP is verified
+        window.tempRegistrationData = { name, email };
 
-        if (reqError) throw reqError;
+        // Move to OTP step
+        document.getElementById('auth-step-request').classList.add('hidden');
+        document.getElementById('auth-step-2').classList.remove('hidden');
+        document.getElementById('login-otp').value = '';
+        
+        showToast("تم إرسال رمز التحقق إلى بريدك الإلكتروني", "success");
 
-        showToast("تم تسجيل طلبك بنجاح! يرجى انتظار تفعيل حسابك من قبل المسؤول.", "success");
-        resetAuth();
     } catch (err) {
         console.error("Registration Error:", err);
         showToast(`خطأ في التسجيل: ${err.message}`, "error");
@@ -586,6 +592,100 @@ window.submitAdminRequest = async function() {
         btn.innerHTML = '<span>إرسال طلب التسجيل</span> <i class="fas fa-paper-plane"></i>';
     }
 };
+
+window.verifyAuthCode = async function() {
+    if (!window.tempRegistrationData) {
+        resetAuth();
+        return;
+    }
+
+    const otpInput = document.getElementById('login-otp').value.trim();
+    const btn = document.getElementById('verifyBtn');
+    
+    if (!otpInput || otpInput.length < 6) {
+        showToast("يرجى إدخال الرمز بشكل صحيح", "warning");
+        return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<span>جاري التحقق...</span> <i class="fas fa-spinner fa-spin"></i>';
+
+    try {
+        const { email, name } = window.tempRegistrationData;
+
+        // Verify the OTP for signup
+        const { data, error } = await _supabase.auth.verifyOtp({
+            email: email,
+            token: otpInput,
+            type: 'signup'
+        });
+
+        if (error) throw error;
+
+        // OTP verified successfully! Now add to admin_requests for manual approval
+        const { error: reqError } = await _supabase
+            .from('admin_requests')
+            .insert([{ 
+                full_name: name, 
+                email: email, 
+                status: 'pending' 
+            }]);
+
+        if (reqError) {
+            // Even if this fails, the user's email is confirmed in Auth. 
+            // We should still log it, but it's an edge case.
+            console.error("Insert Request Error:", reqError);
+            throw new Error("فشل إرسال الطلب للإدارة، يرجى المحاولة لاحقاً.");
+        }
+
+        showToast("تم تأكيد بريدك وتسجيل طلبك بنجاح! يرجى انتظار تفعيل حسابك من قبل المسؤول.", "success");
+        window.tempRegistrationData = null;
+        resetAuth(); // Go back to login
+    } catch (err) {
+        console.error("OTP Verification Error:", err);
+        showToast(`فشل التحقق: ${err.message === 'Token has expired or is invalid' ? 'الرمز خاطئ أو منتهي الصلاحية' : err.message}`, "error");
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<span>تحقق الآن</span> <i class="fas fa-check-circle"></i>';
+    }
+};
+
+window.sendAuthCode = async function() {
+    if (!window.tempRegistrationData) return;
+    
+    const btn = document.getElementById('resendCodeBtn');
+    btn.disabled = true;
+    btn.textContent = 'جاري الإرسال...';
+    
+    try {
+        const { error } = await _supabase.auth.resend({
+            type: 'signup',
+            email: window.tempRegistrationData.email
+        });
+        
+        if (error) throw error;
+        showToast("تم إعادة إرسال الرمز", "success");
+        
+        // Cooldown timer
+        let timeLeft = 60;
+        const interval = setInterval(() => {
+            timeLeft--;
+            btn.textContent = `انتظر ${timeLeft} ثانية`;
+            if (timeLeft <= 0) {
+                clearInterval(interval);
+                btn.disabled = false;
+                btn.textContent = 'إعادة إرسال';
+            }
+        }, 1000);
+        
+    } catch (err) {
+        console.error("Resend OTP Error:", err);
+        showToast("فشل إعادة الإرسال: " + err.message, "error");
+        btn.disabled = false;
+        btn.textContent = 'إعادة إرسال';
+    }
+};
+
 
 window.toggleRegistration = async function(isClosed) {
     try {
