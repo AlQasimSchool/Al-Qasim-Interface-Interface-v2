@@ -420,9 +420,7 @@ export const templates = {
                             <i class="fas ${isUnlocked ? 'fa-unlock-alt' : 'fa-lock'}"></i> 
                             <span>${isUnlocked ? 'تم فك القفل' : 'فك القفل'}</span>
                         </button>
-                        <button id="print-students-btn" class="glass-btn primary" title="طباعة الكشوفات">
-                            <i class="fas fa-print"></i> <span>طباعة الكشوفات</span>
-                        </button>
+
                         <button id="refresh-students" class="glass-btn" title="تحديث البيانات">
                             <i class="fas fa-sync-alt"></i>
                             <span>تحديث</span>
