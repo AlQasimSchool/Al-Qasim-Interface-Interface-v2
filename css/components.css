@@ -2570,7 +2570,6 @@ input:checked + .slider-premium:before {
         display: none; /* Icon only on mobile */
     }
 }
-/* ===================== Custom Modern Checkbox (Circular Premium) ===================== */
 /* ===================== Custom Modern Checkbox (Premium Indigo) ===================== */
 .custom-checkbox {
     display: inline-flex;
@@ -2578,8 +2577,8 @@ input:checked + .slider-premium:before {
     justify-content: center;
     position: relative;
     cursor: pointer;
-    width: 26px;
-    height: 26px;
+    width: 24px;
+    height: 24px;
     user-select: none;
     overflow: visible;
 }
@@ -2590,8 +2589,8 @@ input:checked + .slider-premium:before {
     cursor: pointer;
     height: 48px;
     width: 48px;
-    top: -11px;
-    left: -11px;
+    top: -12px;
+    left: -12px;
     z-index: 10;
     touch-action: manipulation;
 }
@@ -2600,39 +2599,39 @@ input:checked + .slider-premium:before {
     position: absolute;
     top: 0;
     left: 0;
-    height: 26px;
-    width: 26px;
-    background: rgba(255, 255, 255, 0.03);
+    height: 24px;
+    width: 24px;
+    background: rgba(255, 255, 255, 0.05);
     border: 2px solid rgba(255, 255, 255, 0.15);
-    border-radius: 8px; /* Smooth squircle */
+    border-radius: 7px;
     transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     z-index: 1;
     pointer-events: none;
-    display: flex;
-    align-items: center;
-    justify-content: center;
 }
 
 .custom-checkbox:hover .checkmark {
     border-color: var(--primary-light);
-    background: rgba(99, 102, 241, 0.1);
+    background: rgba(99, 102, 241, 0.12);
     transform: translateY(-1px);
 }
 
 .custom-checkbox input:checked ~ .checkmark {
     background: linear-gradient(135deg, var(--primary), var(--primary-dark));
     border-color: transparent;
-    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
-    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
 }
 
 .checkmark:after {
-    content: "\f00c"; /* FontAwesome Check Icon */
-    font-family: "Font Awesome 6 Free";
-    font-weight: 900;
-    color: white;
-    font-size: 14px;
+    content: "";
+    position: absolute;
     display: none;
+    left: 8px;
+    top: 4px;
+    width: 5px;
+    height: 10px;
+    border: solid white;
+    border-width: 0 2.5px 2.5px 0;
+    transform: rotate(45deg);
 }
 
 .custom-checkbox input:checked ~ .checkmark:after {
@@ -2641,13 +2640,13 @@ input:checked + .slider-premium:before {
 }
 
 @keyframes checkPop {
-    from { transform: scale(0.5); opacity: 0; }
-    to { transform: scale(1); opacity: 1; }
+    from { transform: scale(0.5) rotate(45deg); opacity: 0; }
+    to { transform: scale(1) rotate(45deg); opacity: 1; }
 }
 
 .custom-checkbox input:active ~ .checkmark {
     filter: brightness(1.2);
-    transform: scale(0.95);
+    transform: scale(0.92);
 }
 
 /* ===================== Interactive Feedback & Active States ===================== */
