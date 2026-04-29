@@ -78,18 +78,20 @@
 
 .input-wrapper {
     position: relative;
-    background: rgba(255, 255, 255, 0.03);
+    background: rgba(255, 255, 255, 0.05); /* Slightly brighter for depth */
     border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 18px;
-    padding: 2px 16px;
-    transition: all 0.3s ease;
+    border-radius: 16px;
+    padding: 0 16px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
     align-items: center;
+    height: 56px; /* Consistent height */
+    width: 100%;
 }
 
 .input-wrapper:focus-within {
-    background: rgba(255, 255, 255, 0.05);
-    border-color: var(--primary);
+    background: rgba(255, 255, 255, 0.08);
+    border-color: #6366f1;
     box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
 }
 
@@ -98,15 +100,26 @@
     border: none !important;
     outline: none !important;
     color: white !important;
-    padding: 14px 0 !important;
     font-size: 1rem !important;
     width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0 !important;
+}
+
+/* Fix for browser autofill background */
+.input-wrapper input:-webkit-autofill,
+.input-wrapper input:-webkit-autofill:hover, 
+.input-wrapper input:-webkit-autofill:focus {
+    -webkit-text-fill-color: white !important;
+    -webkit-box-shadow: 0 0 0px 1000px transparent inset !important;
+    transition: background-color 5000s ease-in-out 0s;
 }
 
 .input-icon-end {
-    color: var(--primary-light);
+    color: #6366f1;
     font-size: 1.1rem;
-    opacity: 0.7;
+    opacity: 0.8;
     margin-right: 12px;
 }
 
