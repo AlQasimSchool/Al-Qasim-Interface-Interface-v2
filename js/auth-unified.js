@@ -585,29 +585,34 @@ window.submitAdminRequest = async function() {
 
 window.toggleRegistration = async function(isClosed) {
     try {
-        console.log("Attempting to toggle registration to:", isClosed);
+        const valueStr = isClosed.toString();
         
-        // Use upsert with explicit onConflict for the 'key' column
-        const { data, error } = await _supabase
+        // Strategy: Try to update first, if it fails or returns 0 rows, try to insert.
+        // This is more compatible than upsert in some RLS configurations.
+        const { data: updateData, error: updateError } = await _supabase
             .from('settings')
-            .upsert(
-                { key: 'registration_closed', value: isClosed.toString() },
-                { onConflict: 'key' }
-            )
+            .update({ value: valueStr })
+            .eq('key', 'registration_closed')
             .select();
 
-        if (error) {
-            console.error("Supabase Error Details:", error);
-            throw error;
+        if (updateError) throw updateError;
+
+        // If no rows were updated, it means the key doesn't exist, so insert it.
+        if (!updateData || updateData.length === 0) {
+            const { error: insertError } = await _supabase
+                .from('settings')
+                .insert({ key: 'registration_closed', value: valueStr });
+            
+            if (insertError) throw insertError;
         }
 
-        console.log("Update successful:", data);
         showToast(isClosed ? "تم إغلاق باب الطلبات" : "تم فتح باب الطلبات", "success");
     } catch (err) {
         console.error("Toggle Reg Error:", err);
-        // Show more descriptive error if it's a permission issue
-        const msg = err.code === '42501' ? "ليس لديك صلاحية لتعديل الإعدادات" : "فشل في تحديث الحالة - تأكد من اتصال الإنترنت";
-        showToast(msg, "error");
+        // Show the actual error code for debugging
+        const errorCode = err.code || 'Unknown';
+        const errorMsg = err.message || 'خطأ غير معروف';
+        showToast(`فشل في التحديث (كود: ${errorCode}): ${errorMsg}`, "error");
     }
 };
 
