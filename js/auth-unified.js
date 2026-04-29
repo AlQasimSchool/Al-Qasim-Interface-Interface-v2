@@ -325,7 +325,9 @@ window.approveAdminRequest = async function(requestId, name, email) {
             window.renderAdminsList();
         } catch (err) {
             console.error("Approve error:", err);
-            showToast("حدث خطأ أثناء معالجة الطلب", "error");
+            const errorCode = err.code || 'Unknown';
+            const errorMsg = err.message || 'حدث خطأ غير معروف';
+            showToast(`فشل في معالجة الطلب (كود: ${errorCode}): ${errorMsg}`, "error");
         }
     });
 };
@@ -344,7 +346,9 @@ window.rejectAdminRequest = async function(requestId) {
             window.renderAdminRequestsList();
         } catch (err) {
             console.error("Reject error:", err);
-            showToast("حدث خطأ أثناء رفض الطلب", "error");
+            const errorCode = err.code || 'Unknown';
+            const errorMsg = err.message || 'حدث خطأ غير معروف';
+            showToast(`فشل في رفض الطلب (كود: ${errorCode}): ${errorMsg}`, "error");
         }
     });
 };
