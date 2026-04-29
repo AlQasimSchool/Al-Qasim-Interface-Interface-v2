@@ -2658,7 +2658,6 @@ button, .nav-item, .doc-card, .video-card, .note-card, .row-copy-btn, .custom-ch
 
 .student-row { transition: background 0.2s, transform 0.2s; cursor: default; }
 .student-row:hover { background: rgba(255, 255, 255, 0.03) !important; }
-.row-copy-btn:active { transform: scale(0.85); color: var(--primary-light); }
 
 .nav-item:hover i { transform: scale(1.1) rotate(-5deg); color: var(--primary-light); }
 .nav-item:hover span { transform: translateX(-5px); color: white; }

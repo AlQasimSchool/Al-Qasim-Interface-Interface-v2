@@ -399,9 +399,6 @@ export const templates = {
                 <td class="student-name">
                     <div style="display:flex; align-items:center; justify-content:space-between; width:100%">
                         <span>${s.name}</span>
-                        <button class="row-copy-btn" onclick="window.copyStudentRow('${s.id}')" title="نسخ البيانات">
-                            <i class="fas fa-copy"></i>
-                        </button>
                     </div>
                 </td>
                 <td class="student-sensitive"><span class="${isUnlocked ? '' : 'blurred'}">${isUnlocked ? s.id : '********'}</span></td>
