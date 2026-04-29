@@ -2,14 +2,14 @@
 .auth-right-side {
     position: relative;
     background: #0f172a;
-    border-radius: 40px;
-    margin: 20px;
-    margin-right: 0; /* Remove right margin to stick to the center/left */
+    margin: 0; /* Edge to edge to hide background */
+    border-radius: 0; /* Solid edges */
     overflow: hidden;
-    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.4);
+    box-shadow: none;
     display: flex;
     align-items: center;
     justify-content: center;
+    flex: 1;
 }
 
 .auth-image-layer {
