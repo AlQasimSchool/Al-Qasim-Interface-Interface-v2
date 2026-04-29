@@ -1972,7 +1972,7 @@ input:checked + .slider-premium:before {
     position: fixed;
     inset: 0;
     z-index: 10000;
-    background: #020617; /* Deepest dark */
+    background: #0f172a; 
     display: flex;
     align-items: stretch;
     justify-content: stretch;
@@ -1987,7 +1987,7 @@ input:checked + .slider-premium:before {
 
 .auth-left-side {
     flex: 1;
-    background: radial-gradient(circle at 0% 0%, #0f172a 0%, #1e293b 100%); /* Indigo theme background */
+    background: #0f172a; 
     padding: 60px 8%;
     display: flex;
     flex-direction: column;
@@ -2356,7 +2356,7 @@ input:checked + .slider-premium:before {
         flex-direction: column; 
         overflow-y: auto; 
         height: 100vh;
-        background: #0f172a; /* Matched with app theme */
+        background: #0f172a; 
     }
     
     .auth-left-side { 
