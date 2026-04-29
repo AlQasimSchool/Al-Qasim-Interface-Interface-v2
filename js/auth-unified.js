@@ -15,6 +15,36 @@ let resendInterval = null;
 document.addEventListener('DOMContentLoaded', () => {
     checkSession();
     
+    // Check for password recovery/reset from URL
+    const hash = window.location.hash;
+    if (hash && (hash.includes('type=recovery') || hash.includes('access_token'))) {
+        setTimeout(() => {
+            window.showActionPrompt({
+                title: "تعيين كلمة المرور الجديدة",
+                subtitle: "يرجى إدخال كلمة المرور التي تريد استخدامها للدخول",
+                icon: "fa-key",
+                type: "password",
+                placeholder: "كلمة المرور الجديدة",
+                callback: async (newPassword) => {
+                    if (newPassword.length < 6) {
+                        showToast("كلمة المرور قصيرة جداً", "warning");
+                        return 'keep-open';
+                    }
+                    try {
+                        const { error } = await _supabase.auth.updateUser({ password: newPassword });
+                        if (error) throw error;
+                        showToast("تم تعيين كلمة المرور بنجاح! يمكنك الدخول الآن.", "success");
+                        window.location.hash = ''; // Clear hash
+                        return true;
+                    } catch (err) {
+                        showToast("فشل التحديث: " + err.message, "error");
+                        return 'keep-open';
+                    }
+                }
+            });
+        }, 1500);
+    }
+    
     // Auto-fill email if remembered
     const savedEmail = window.safeStorage.getItem('remembered_email');
     if (savedEmail) {
@@ -396,6 +426,26 @@ window.loginWithPassword = async function() {
         btn.disabled = false;
         btn.innerHTML = '<span>تسجيل الدخول</span> <i class="fas fa-sign-in-alt"></i>';
     }
+};
+
+window.handleForgotPassword = async function() {
+    const email = document.getElementById('login-email').value.trim().toLowerCase();
+    if (!email) {
+        showToast("يرجى كتابة بريدك الإلكتروني أولاً في الخانة المخصصة", "warning");
+        return;
+    }
+
+    window.showConfirm("تعيين كلمة المرور", `هل تريد إرسال رابط تعيين كلمة المرور إلى ${email}؟`, async () => {
+        try {
+            const { error } = await _supabase.auth.resetPasswordForEmail(email, {
+                redirectTo: window.location.origin + window.location.pathname,
+            });
+            if (error) throw error;
+            showToast("تم إرسال رابط التعيين لبريدك بنجاح", "success");
+        } catch (err) {
+            showToast("خطأ: " + err.message, "error");
+        }
+    });
 };
 
 // Deprecated OTP functions (keeping for compatibility if needed)
