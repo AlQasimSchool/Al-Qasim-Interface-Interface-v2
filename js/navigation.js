@@ -379,7 +379,7 @@ export async function renderStudents() {
         // Add checkbox selection logic
         const selectAll = document.getElementById('select-all-students');
         if (selectAll) {
-            selectAll.onclick = () => {
+            selectAll.onchange = () => {
                 const allCheckboxes = document.querySelectorAll('.student-checkbox');
                 allCheckboxes.forEach(cb => {
                     const row = cb.closest('.student-row');
@@ -387,17 +387,15 @@ export async function renderStudents() {
                         cb.checked = selectAll.checked;
                     }
                 });
-                if (window.updateSelectionToolbar) window.updateSelectionToolbar();
+                window.updateSelectionToolbar();
             };
         }
 
-        // Add click listener to the labels to ensure toggle works perfectly
-        container.querySelectorAll('.custom-checkbox').forEach(label => {
-            label.onclick = (e) => {
-                // Let the event bubble to the input
-                setTimeout(() => {
-                    if (window.updateSelectionToolbar) window.updateSelectionToolbar();
-                }, 50);
+        // Add direct click handler to checkboxes for instant response
+        container.querySelectorAll('.student-checkbox').forEach(cb => {
+            cb.onchange = (e) => {
+                e.stopPropagation();
+                window.updateSelectionToolbar();
             };
         });
 
@@ -603,3 +601,54 @@ function generatePrintDoc(students, columns, customTitle) {
         window.print();
     }, 1000);
 }
+
+// Global Selection Toolbar Logic
+window.updateSelectionToolbar = function() {
+    const toolbar = document.getElementById('selection-toolbar');
+    const selectedCheckboxes = document.querySelectorAll('.student-checkbox:checked');
+    const countEl = document.getElementById('selected-count');
+    
+    if (!toolbar || !countEl) return;
+
+    if (selectedCheckboxes.length > 0) {
+        countEl.textContent = selectedCheckboxes.length;
+        toolbar.classList.remove('hidden');
+        toolbar.classList.add('active');
+    } else {
+        toolbar.classList.add('hidden');
+        toolbar.classList.remove('active');
+        
+        // Also uncheck "select all" if nothing is selected
+        const selectAll = document.getElementById('select-all-students');
+        if (selectAll) selectAll.checked = false;
+    }
+};
+
+window.clearStudentSelection = function() {
+    document.querySelectorAll('.student-checkbox').forEach(cb => cb.checked = false);
+    const selectAll = document.getElementById('select-all-students');
+    if (selectAll) selectAll.checked = false;
+    window.updateSelectionToolbar();
+};
+
+window.copySelectedStudents = function() {
+    const selected = Array.from(document.querySelectorAll('.student-checkbox:checked')).map(cb => {
+        const row = cb.closest('.student-row');
+        return row ? row.dataset.student : null;
+    }).filter(Boolean);
+
+    if (selected.length === 0) return;
+
+    const text = selected.map(s => {
+        const data = JSON.parse(s);
+        return `${data.name}\t${data.id}\t${data.section}\t${data.phone}`;
+    }).join('\n');
+
+    navigator.clipboard.writeText(text).then(() => {
+        if (window.showToast) window.showToast(`تم نسخ بيانات ${selected.length} طالب`, 'success');
+    });
+};
+
+window.printSelectedStudents = function() {
+    if (window.openPrintModal) window.openPrintModal();
+};
