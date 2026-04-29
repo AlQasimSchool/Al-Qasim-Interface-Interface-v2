@@ -585,15 +585,29 @@ window.submitAdminRequest = async function() {
 
 window.toggleRegistration = async function(isClosed) {
     try {
-        const { error } = await _supabase
+        console.log("Attempting to toggle registration to:", isClosed);
+        
+        // Use upsert with explicit onConflict for the 'key' column
+        const { data, error } = await _supabase
             .from('settings')
-            .upsert([{ key: 'registration_closed', value: isClosed.toString() }], { onConflict: 'key' });
+            .upsert(
+                { key: 'registration_closed', value: isClosed.toString() },
+                { onConflict: 'key' }
+            )
+            .select();
 
-        if (error) throw error;
+        if (error) {
+            console.error("Supabase Error Details:", error);
+            throw error;
+        }
+
+        console.log("Update successful:", data);
         showToast(isClosed ? "تم إغلاق باب الطلبات" : "تم فتح باب الطلبات", "success");
     } catch (err) {
         console.error("Toggle Reg Error:", err);
-        showToast("فشل في تحديث الحالة", "error");
+        // Show more descriptive error if it's a permission issue
+        const msg = err.code === '42501' ? "ليس لديك صلاحية لتعديل الإعدادات" : "فشل في تحديث الحالة - تأكد من اتصال الإنترنت";
+        showToast(msg, "error");
     }
 };
 
