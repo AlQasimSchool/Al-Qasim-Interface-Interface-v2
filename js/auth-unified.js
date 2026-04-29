@@ -204,16 +204,43 @@ window.showActionPrompt = function(options) {
     }
     
     modal.classList.remove('hidden');
-    if (!hideInput) input.focus();
+    if (!hideInput) {
+        input.focus();
+        // Allow Enter key to submit
+        input.onkeydown = function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                confirmBtn.click();
+            }
+        };
+    } else {
+        input.onkeydown = null;
+    }
     
     confirmBtn.onclick = async () => {
         const val = input.value.trim();
-        const result = await callback(val);
-        if (result !== false && result !== 'keep-open') {
-            window.closePromptModal();
+        const originalHtml = confirmBtn.innerHTML;
+        
+        // Visual feedback
+        confirmBtn.disabled = true;
+        confirmBtn.innerHTML = '<span>جاري...</span> <i class="fas fa-spinner fa-spin"></i>';
+        
+        try {
+            const result = await callback(val);
+            if (result !== false && result !== 'keep-open') {
+                window.closePromptModal();
+            }
+        } catch (err) {
+            console.error("Prompt Callback Error:", err);
+            showToast("حدث خطأ غير متوقع", "error");
+        } finally {
+            // Restore button state
+            confirmBtn.disabled = false;
+            confirmBtn.innerHTML = originalHtml;
         }
     };
 };
+
 
 window.showConfirm = function(title, subtitle, callback) {
     window.showActionPrompt({
