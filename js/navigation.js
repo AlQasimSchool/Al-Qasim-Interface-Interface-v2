@@ -604,13 +604,6 @@ function generatePrintDoc(students, columns, customTitle) {
         window.print();
     }, 800);
 }
-
-    printSection.innerHTML = headerHtml + tableHtml;
-    
-    // Wait for fonts and images to load properly
-    setTimeout(() => {
-        window.print();
-    }, 1000);
 }
 
 // Global Selection Toolbar Logic
