@@ -91,22 +91,22 @@
 
 /* Submit Button */
 .auth-btn-modern {
-    background: linear-gradient(135deg, #6366f1, #4f46e5);
-    border: none;
-    border-radius: 18px;
-    padding: 18px;
-    color: white;
-    font-weight: 700;
-    font-size: 1.1rem;
-    width: 100%;
-    cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    margin-top: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
-    box-shadow: 0 10px 25px rgba(99, 102, 241, 0.35);
+    background: linear-gradient(135deg, #6366f1, #4f46e5) !important;
+    border: none !important;
+    border-radius: 18px !important;
+    padding: 18px !important;
+    color: white !important;
+    font-weight: 700 !important;
+    font-size: 1.1rem !important;
+    width: 100% !important;
+    cursor: pointer !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    margin-top: 10px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 12px !important;
+    box-shadow: 0 10px 25px rgba(99, 102, 241, 0.35) !important;
 }
 
 .auth-btn-modern:hover {
