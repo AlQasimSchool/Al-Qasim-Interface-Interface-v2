@@ -2580,17 +2580,19 @@ input:checked + .slider-premium:before {
     width: 24px;
     height: 24px;
     user-select: none;
+    overflow: visible; /* Allow hit area to expand beyond label */
 }
 
 .custom-checkbox input {
     position: absolute;
     opacity: 0;
     cursor: pointer;
-    height: 32px; /* Larger hit area */
-    width: 32px;
-    top: -4px;
-    left: -4px;
-    z-index: 5;
+    height: 48px; /* Massive hit area for mobile */
+    width: 48px;
+    top: -12px;
+    left: -12px;
+    z-index: 10;
+    touch-action: manipulation;
 }
 
 .checkmark {
