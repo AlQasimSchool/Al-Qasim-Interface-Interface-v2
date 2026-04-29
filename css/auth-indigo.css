@@ -1,9 +1,10 @@
 /* Premium Indigo Auth Styles */
 .auth-right-side {
     position: relative;
-    background: #0f172a; /* Solid Indigo Base */
+    background: #0f172a;
     border-radius: 40px;
     margin: 20px;
+    margin-right: 0; /* Remove right margin to stick to the center/left */
     overflow: hidden;
     box-shadow: 0 30px 60px rgba(0, 0, 0, 0.4);
     display: flex;
