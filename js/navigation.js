@@ -388,24 +388,25 @@ export async function renderStudents() {
         // Add checkbox selection logic
         const selectAll = document.getElementById('select-all-students');
         if (selectAll) {
-            selectAll.onchange = () => {
+            selectAll.addEventListener('change', function() {
+                const isChecked = this.checked;
                 const allCheckboxes = document.querySelectorAll('.student-checkbox');
                 allCheckboxes.forEach(cb => {
                     const row = cb.closest('.student-row');
                     if (row && row.style.display !== 'none') {
-                        cb.checked = selectAll.checked;
+                        cb.checked = isChecked;
                     }
                 });
                 window.updateSelectionToolbar();
-            };
+            });
         }
 
-        // Add direct click handler to checkboxes for instant response
+        // Add event delegation for individual checkboxes if possible, 
+        // or ensure they all have listeners
         container.querySelectorAll('.student-checkbox').forEach(cb => {
-            cb.onchange = (e) => {
-                e.stopPropagation();
+            cb.addEventListener('change', (e) => {
                 window.updateSelectionToolbar();
-            };
+            });
         });
 
         // Attach print modal caller

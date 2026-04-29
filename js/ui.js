@@ -392,7 +392,7 @@ export const templates = {
             <tr class="student-row" data-name="${s.name}" data-id="${s.id}" data-student='${JSON.stringify(s).replace(/'/g, "&apos;")}'>
                 <td>
                     <label class="custom-checkbox">
-                        <input type="checkbox" class="student-checkbox" data-id="${s.id}" onchange="window.updateSelectionToolbar()">
+                        <input type="checkbox" class="student-checkbox" data-id="${s.id}">
                         <span class="checkmark"></span>
                     </label>
                 </td>
