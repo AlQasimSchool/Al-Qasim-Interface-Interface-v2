@@ -117,6 +117,15 @@ export function navigateTo(pageId) {
         }
         pageContent.style.opacity = '1';
 
+        // Page-specific initialization
+        if (pageId === 'settings') {
+            setTimeout(async () => {
+                const isClosed = await window.checkRegistrationStatus?.();
+                const regToggle = document.getElementById('reg-status-toggle');
+                if (regToggle) regToggle.checked = !!isClosed;
+            }, 100);
+        }
+
         // Trigger page-specific logic
         try {
             if (pageId === 'dashboard') {

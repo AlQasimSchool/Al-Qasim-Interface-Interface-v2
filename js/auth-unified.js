@@ -227,58 +227,40 @@ window.showConfirm = function(title, subtitle, callback) {
 
 
 
-/**
- * Reusable function to verify sensitive admin actions via Email OTP
- */
 window.verifyAdminAction = async function(callback) {
-    if (!currentUser) {
-        showToast("يجب تسجيل الدخول أولاً", "error");
-        return;
-    }
-    
-    showToast("جاري إرسال كود التحقق لبريدك للتأكيد...", "info");
-    
-    try {
-        const { error } = await _supabase.auth.signInWithOtp({
-            email: currentUser.email
-        });
-        
-        if (error) throw error;
-        
-        window.showActionPrompt({
-            title: "تأكيد الهوية",
-            subtitle: "تم إرسال رمز التحقق لبريدك الإلكتروني، أدخله لتأكيد هذا الإجراء:",
-            icon: "fa-shield-check",
-            placeholder: "000000",
-            callback: async (otp) => {
-                if (!otp) return false;
-                
-                showToast("جاري التحقق...", "info");
-                try {
-                    const { error: verifyError } = await _supabase.auth.verifyOtp({
-                        email: currentUser.email,
-                        token: otp,
-                        type: 'email'
-                    });
-                    
-                    if (verifyError) {
-                        showToast("الكود غير صحيح", "error");
-                        return false;
-                    }
-                    
-                    // Success! Execute the actual action
-                    await callback();
-                    return true;
-                } catch (err) {
-                    showToast(err.message, "error");
-                    return false;
-                }
+    window.showActionPrompt({
+        title: "تأكيد الهوية",
+        subtitle: "يرجى إدخال كلمة مرور حسابك لتأكيد هذا الإجراء",
+        icon: "fa-shield-alt",
+        type: "password",
+        placeholder: "كلمة المرور",
+        callback: async (password) => {
+            if (!password) {
+                showToast("كلمة المرور مطلوبة", "warning");
+                return 'keep-open';
             }
-        });
-        
-    } catch (err) {
-        showToast(err.message, "error");
-    }
+            
+            try {
+                // Verify password by trying a silent re-auth
+                const { error } = await _supabase.auth.signInWithPassword({
+                    email: currentUser.email,
+                    password: password
+                });
+
+                if (error) {
+                    showToast("كلمة المرور غير صحيحة", "error");
+                    return 'keep-open';
+                }
+
+                // Success! Execute the actual action
+                await callback();
+                return true;
+            } catch (err) {
+                showToast("خطأ في التحقق: " + err.message, "error");
+                return 'keep-open';
+            }
+        }
+    });
 };
 
 window.requestPinChange = async function() {
@@ -600,6 +582,44 @@ window.submitAdminRequest = async function() {
         btn.innerHTML = '<span>إرسال طلب التسجيل</span> <i class="fas fa-paper-plane"></i>';
     }
 };
+
+window.toggleRegistration = async function(isClosed) {
+    try {
+        const { error } = await _supabase
+            .from('settings')
+            .upsert([{ key: 'registration_closed', value: isClosed.toString() }], { onConflict: 'key' });
+
+        if (error) throw error;
+        showToast(isClosed ? "تم إغلاق باب الطلبات" : "تم فتح باب الطلبات", "success");
+    } catch (err) {
+        console.error("Toggle Reg Error:", err);
+        showToast("فشل في تحديث الحالة", "error");
+    }
+};
+
+window.checkRegistrationStatus = async function() {
+    try {
+        const { data, error } = await _supabase
+            .from('settings')
+            .select('value')
+            .eq('key', 'registration_closed')
+            .maybeSingle();
+
+        if (error) throw error;
+        const isClosed = data?.value === 'true';
+        
+        const joinBtn = document.getElementById('show-request-btn');
+        if (joinBtn) {
+            joinBtn.style.display = isClosed ? 'none' : 'block';
+        }
+        return isClosed;
+    } catch (err) {
+        return false;
+    }
+};
+
+// Auto check on load
+document.addEventListener('DOMContentLoaded', window.checkRegistrationStatus);
 
 function logout() {
     window.showConfirm("تسجيل الخروج", "هل أنت متأكد أنك تريد تسجيل الخروج من النظام؟", () => {

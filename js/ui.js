@@ -689,6 +689,17 @@ export const templates = {
                             <h3>إدارة المسؤولين</h3>
                         </div>
                         <p class="settings-hint-text">يمكنك إضافة زملاء لمشاركتك في إدارة المحتوى والطلاب.</p>
+                        
+                        <div class="setting-item-premium" style="margin-bottom: 20px; background: rgba(255, 255, 255, 0.03); border-radius: 12px; padding: 12px;">
+                            <div class="setting-text">
+                                <span style="font-weight: bold; color: var(--primary-light);">إغلاق باب التسجيل</span>
+                                <p style="font-size: 0.8rem; opacity: 0.7;">عند التفعيل، سيختفي خيار "طلب انضمام" من شاشة الدخول.</p>
+                            </div>
+                            <label class="switch-premium">
+                                <input type="checkbox" id="reg-status-toggle" onchange="window.toggleRegistration(this.checked)">
+                                <span class="slider-premium"></span>
+                            </label>
+                        </div>
                         <div class="admin-add-form-premium">
                             <div class="premium-input-group">
                                 <label><i class="fas fa-user"></i> الاسم الكامل</label>
