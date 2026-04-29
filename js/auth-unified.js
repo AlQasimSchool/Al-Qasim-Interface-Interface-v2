@@ -1108,7 +1108,6 @@ window.renderAdminRequestsList = async function() {
         container.innerHTML = '<p style="color: #ef4444; font-size: 0.8rem; text-align: center;">خطأ في تحميل البيانات</p>';
     }
 };
-};
 
 // --- Audit Logs System ---
 window.logAdminAction = async function(action, details = '') {

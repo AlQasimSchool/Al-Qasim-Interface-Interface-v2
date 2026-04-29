@@ -1529,7 +1529,7 @@ async function requestAuthCode() {
     }
 }
 
-let resendInterval = null;
+var resendInterval = null;
 function startResendTimer() {
     const resendBtn = document.getElementById('resendCodeBtn');
     if (!resendBtn) return;
