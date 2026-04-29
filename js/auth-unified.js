@@ -264,43 +264,42 @@ window.verifyAdminAction = async function(callback) {
 };
 
 window.requestPinChange = async function() {
-    window.verifyAdminAction(async () => {
-        setTimeout(() => {
-            window.showActionPrompt({
-                title: "الرقم السري الجديد",
-                subtitle: "أدخل الرقم السري الجديد المكون من 4 أرقام:",
-                icon: "fa-key",
-                placeholder: "0000",
-                type: "password",
-                callback: async (newPin) => {
-                    if (!newPin || newPin.length !== 4 || isNaN(newPin)) {
-                        showToast("يجب إدخال 4 أرقام فقط", "error");
-                        return false;
-                    }
-                    
-                    try {
-                        const { error: updateError } = await _supabase
-                            .from('admins')
-                            .update({ pin: newPin })
-                            .eq('email', currentUser.email);
-                            
-                        if (updateError) throw updateError;
-                        
-                        showToast("تم تحديث الرقم السري بنجاح", "success");
-                        currentUser.pin = newPin;
-                        window.safeStorage.setItem('admin_session', JSON.stringify(currentUser));
-                        if (window.navigateTo) window.navigateTo('settings');
-                        return true;
-                    } catch (e) {
-                        console.error("PIN Update Error:", e);
-                        showToast("فشل التحديث: " + (e.message || ""), "error");
-                        return false;
-                    }
+    setTimeout(() => {
+        window.showActionPrompt({
+            title: "الرقم السري الجديد",
+            subtitle: "أدخل الرقم السري الجديد المكون من 4 أرقام:",
+            icon: "fa-key",
+            placeholder: "0000",
+            type: "password",
+            callback: async (newPin) => {
+                if (!newPin || newPin.length !== 4 || isNaN(newPin)) {
+                    showToast("يجب إدخال 4 أرقام فقط", "error");
+                    return false;
                 }
-            });
-        }, 100);
-    });
+                
+                try {
+                    const { error: updateError } = await _supabase
+                        .from('admins')
+                        .update({ pin: newPin })
+                        .eq('email', currentUser.email);
+                        
+                    if (updateError) throw updateError;
+                    
+                    showToast("تم تحديث الرقم السري بنجاح", "success");
+                    currentUser.pin = newPin;
+                    window.safeStorage.setItem('admin_session', JSON.stringify(currentUser));
+                    if (window.navigateTo) window.navigateTo('settings');
+                    return true;
+                } catch (e) {
+                    console.error("PIN Update Error:", e);
+                    showToast("فشل التحديث: " + (e.message || ""), "error");
+                    return false;
+                }
+            }
+        });
+    }, 100);
 };
+
 
 window.approveAdminRequest = async function(requestId, name, email) {
     try {
