@@ -2356,7 +2356,7 @@ input:checked + .slider-premium:before {
         flex-direction: column; 
         overflow-y: auto; 
         height: 100vh;
-        background: #020617;
+        background: #0f172a; /* Matched with app theme */
     }
     
     .auth-left-side { 
