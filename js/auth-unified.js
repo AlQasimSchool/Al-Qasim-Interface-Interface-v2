@@ -303,37 +303,36 @@ window.requestPinChange = async function() {
 };
 
 window.approveAdminRequest = async function(requestId, name, email) {
-    window.verifyAdminAction(async () => {
-        try {
-            // 1. Add to admins table
-            const { error: insertError } = await _supabase
-                .from('admins')
-                .insert([{ full_name: name, email: email }]);
+    try {
+        // 1. Add to admins table
+        const { error: insertError } = await _supabase
+            .from('admins')
+            .insert([{ full_name: name, email: email }]);
 
-            if (insertError) throw insertError;
+        if (insertError) throw insertError;
 
-            // 2. Update request status
-            const { error: updateError } = await _supabase
-                .from('admin_requests')
-                .update({ status: 'approved' })
-                .eq('id', requestId);
+        // 2. Update request status
+        const { error: updateError } = await _supabase
+            .from('admin_requests')
+            .update({ status: 'approved' })
+            .eq('id', requestId);
 
-            if (updateError) throw updateError;
+        if (updateError) throw updateError;
 
-            showToast("تم قبول الطلب وإضافة المسؤول بنجاح", "success");
-            window.renderAdminRequestsList();
-            window.renderAdminsList();
-        } catch (err) {
-            console.error("Approve error:", err);
-            const errorCode = err.code || 'Unknown';
-            const errorMsg = err.message || 'حدث خطأ غير معروف';
-            showToast(`فشل في معالجة الطلب (كود: ${errorCode}): ${errorMsg}`, "error");
-        }
-    });
+        showToast("تم قبول الطلب وإضافة المسؤول بنجاح", "success");
+        window.renderAdminRequestsList();
+        window.renderAdminsList();
+    } catch (err) {
+        console.error("Approve error:", err);
+        const errorCode = err.code || 'Unknown';
+        const errorMsg = err.message || 'حدث خطأ غير معروف';
+        showToast(`فشل في معالجة الطلب (كود: ${errorCode}): ${errorMsg}`, "error");
+    }
 };
 
 window.rejectAdminRequest = async function(requestId) {
-    window.verifyAdminAction(async () => {
+    // Show confirmation before rejecting
+    window.showConfirm("تأكيد الرفض", "هل أنت متأكد من رفض هذا الطلب؟", async () => {
         try {
             const { error } = await _supabase
                 .from('admin_requests')
@@ -352,6 +351,7 @@ window.rejectAdminRequest = async function(requestId) {
         }
     });
 };
+
 
 window.fallbackToEmail = function() {
     document.getElementById('biometricOverlay').classList.add('hidden');
