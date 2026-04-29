@@ -630,23 +630,44 @@ window.checkRegistrationStatus = async function() {
 
         if (error) throw error;
         
-        // Handle both string 'true' and boolean true just in case
         const isClosed = data && (data.value === 'true' || data.value === true);
+        window.registrationClosed = isClosed; // Global flag
+
+        const footer = document.querySelector('.auth-footer');
+        if (footer) {
+            footer.style.display = isClosed ? 'none' : 'block';
+        }
         
+        // Also hide the specific button if it's outside the footer for some reason
         const joinBtn = document.getElementById('show-request-btn');
         if (joinBtn) {
-            // Hide the entire paragraph that contains the link
-            const footerPara = joinBtn.closest('p');
-            if (footerPara) {
-                footerPara.style.display = isClosed ? 'none' : 'block';
-            } else {
-                joinBtn.style.display = isClosed ? 'none' : 'block';
-            }
+            joinBtn.style.display = isClosed ? 'none' : 'block';
         }
+
         return isClosed;
     } catch (err) {
         console.error("Check Reg Status Error:", err);
         return false;
+    }
+};
+
+// Add protection to the showRegistration function
+const originalShowRegistration = window.showRegistration;
+window.showRegistration = function() {
+    if (window.registrationClosed) {
+        showToast("باب التسجيل مغلق حالياً بقرار من الإدارة", "warning");
+        return;
+    }
+    if (typeof originalShowRegistration === 'function') {
+        originalShowRegistration();
+    } else {
+        // Fallback if not globally defined yet
+        const step1 = document.getElementById('auth-step-1');
+        const regStep = document.getElementById('auth-registration-step');
+        if (step1 && regStep) {
+            step1.classList.add('hidden');
+            regStep.classList.remove('hidden');
+        }
     }
 };
 
