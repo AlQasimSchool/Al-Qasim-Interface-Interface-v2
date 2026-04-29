@@ -342,81 +342,13 @@ window.fallbackToEmail = function() {
     document.getElementById('auth-step-2').classList.add('hidden');
 };
 
-async function sendAuthCode() {
-    const emailInput = document.getElementById('login-email');
-    const email = emailInput.value.trim().toLowerCase();
-    const btn = document.getElementById('sendCodeBtn');
-
-    if (!email) {
-        showToast("يرجى إدخال البريد الإلكتروني", "error");
-        return;
-    }
-
-    btn.disabled = true;
-    btn.innerHTML = '<span>جاري الإرسال...</span> <i class="fas fa-spinner fa-spin"></i>';
-
-    try {
-        const { data: admin, error: dbError } = await _supabase
-            .from('admins')
-            .select('*')
-            .eq('email', email)
-            .single();
-
-        if (dbError || !admin) {
-            throw new Error("عذراً، هذا البريد غير مسجل كمسؤول.");
-        }
-
-        const { error: authError } = await _supabase.auth.signInWithOtp({
-            email: email,
-            options: { shouldCreateUser: true }
-        });
-
-        if (authError) throw authError;
-
-        showToast("تم إرسال رمز التحقق لبريدك الإلكتروني", "success");
-        tempLoginData = admin;
-        
-        document.getElementById('auth-step-1').classList.add('hidden');
-        document.getElementById('auth-step-2').classList.remove('hidden');
-        
-        startResendTimer();
-    } catch (err) {
-        console.error("Auth Error:", err);
-        showToast(err.message, "error");
-    } finally {
-        btn.disabled = false;
-        btn.innerHTML = '<span>إرسال رمز الدخول السريع</span> <i class="fas fa-envelope"></i>';
-    }
-}
-
-function startResendTimer() {
-    const resendBtn = document.getElementById('resendCodeBtn');
-    if (!resendBtn) return;
-
-    let seconds = 60;
-    resendBtn.disabled = true;
-    
-    if (resendInterval) clearInterval(resendInterval);
-    
-    resendInterval = setInterval(() => {
-        seconds--;
-        resendBtn.textContent = `إعادة الإرسال خلال (${seconds}ث)`;
-        
-        if (seconds <= 0) {
-            clearInterval(resendInterval);
-            resendBtn.disabled = false;
-            resendBtn.textContent = "إعادة إرسال الرمز";
-        }
-    }, 1000);
-}
-
-async function verifyAuthCode() {
+window.loginWithPassword = async function() {
     const email = document.getElementById('login-email').value.trim().toLowerCase();
-    const token = document.getElementById('login-otp').value.trim();
-    const btn = document.getElementById('verifyBtn');
+    const password = document.getElementById('login-password').value.trim();
+    const btn = document.getElementById('loginBtn');
 
-    if (!token) {
-        showToast("يرجى إدخال الرمز", "error");
+    if (!email || !password) {
+        showToast("يرجى إدخال البريد الإلكتروني وكلمة المرور", "error");
         return;
     }
 
@@ -424,17 +356,26 @@ async function verifyAuthCode() {
     btn.innerHTML = '<span>جاري التحقق...</span> <i class="fas fa-spinner fa-spin"></i>';
 
     try {
-        const { error } = await _supabase.auth.verifyOtp({
+        const { data, error } = await _supabase.auth.signInWithPassword({
             email,
-            token,
-            type: 'email'
+            password
         });
 
         if (error) throw error;
 
-        // Verification message removed as per user request
-        
-        currentUser = tempLoginData;
+        // Fetch user info from our admins table
+        const { data: admin, error: dbError } = await _supabase
+            .from('admins')
+            .select('*')
+            .eq('email', email)
+            .maybeSingle();
+
+        if (dbError || !admin) {
+            // If authenticated but not in admins table, they are pending or invalid
+            throw new Error("عذراً، لم يتم تفعيل حسابك كمسؤول بعد.");
+        }
+
+        currentUser = admin;
         window.safeStorage.setItem('admin_session', JSON.stringify(currentUser));
         window.safeStorage.setItem('remembered_email', currentUser.email);
         
@@ -447,13 +388,17 @@ async function verifyAuthCode() {
         if (window.updateGreeting) window.updateGreeting();
         
     } catch (err) {
-        console.error("Verify Error:", err);
-        showToast("الرمز غير صحيح أو انتهت صلاحيته", "error");
+        console.error("Login Error:", err);
+        showToast("فشل تسجيل الدخول: " + (err.message === "Invalid login credentials" ? "البيانات غير صحيحة" : err.message), "error");
     } finally {
         btn.disabled = false;
-        btn.innerHTML = '<span>تأكيد الدخول</span> <i class="fas fa-check-circle"></i>';
+        btn.innerHTML = '<span>تسجيل الدخول</span> <i class="fas fa-sign-in-alt"></i>';
     }
-}
+};
+
+// Deprecated OTP functions (keeping for compatibility if needed)
+window.sendLoginOtp = () => showToast("تم استبدال نظام الرمز بكلمة المرور", "info");
+window.verifyAuthCode = () => {};
 
 async function toggleBiometricLock(checkbox) {
     if (checkbox.checked) {
@@ -555,34 +500,53 @@ window.showRequestStep = function() {
 window.submitAdminRequest = async function() {
     const name = document.getElementById('req-name').value.trim();
     const email = document.getElementById('req-email').value.trim().toLowerCase();
+    const password = document.getElementById('req-password').value.trim();
     const btn = document.getElementById('submitRequestBtn');
 
-    if (!name || !email) {
-        showToast("يرجى إكمال جميع الحقول", "error");
+    if (!name || !email || !password) {
+        showToast("يرجى إكمال جميع الحقول بما في ذلك كلمة المرور", "error");
+        return;
+    }
+
+    if (password.length < 6) {
+        showToast("كلمة المرور يجب أن تكون 6 أحرف على الأقل", "warning");
         return;
     }
 
     btn.disabled = true;
-    btn.innerHTML = '<span>جاري إرسال الطلب...</span> <i class="fas fa-spinner fa-spin"></i>';
+    btn.innerHTML = '<span>جاري المعالجة...</span> <i class="fas fa-spinner fa-spin"></i>';
 
     try {
-        // We use a dedicated table for requests to keep it clean
-        const { error } = await _supabase
+        // 1. Sign up user in Supabase Auth
+        const { data: authData, error: authError } = await _supabase.auth.signUp({
+            email,
+            password,
+            options: {
+                data: { full_name: name }
+            }
+        });
+
+        if (authError) throw authError;
+
+        // 2. Add to admin_requests for manual approval
+        const { error: reqError } = await _supabase
             .from('admin_requests')
-            .insert([{ full_name: name, email: email, status: 'pending' }]);
+            .insert([{ 
+                full_name: name, 
+                email: email, 
+                status: 'pending' 
+            }]);
 
-        if (error) throw error;
+        if (reqError) throw reqError;
 
-        showToast("تم إرسال طلبك بنجاح! سنقوم بمراجعته قريباً.", "success");
+        showToast("تم تسجيل طلبك بنجاح! يرجى انتظار تفعيل حسابك من قبل المسؤول.", "success");
         resetAuth();
     } catch (err) {
-        console.error("Request Error:", err);
-        // Show specific error to help the user identify missing table or RLS issues
-        const errorMsg = err.message || "فشل في إرسال الطلب";
-        showToast(`خطأ: ${errorMsg}`, "error");
+        console.error("Registration Error:", err);
+        showToast(`خطأ في التسجيل: ${err.message}`, "error");
     } finally {
         btn.disabled = false;
-        btn.innerHTML = '<span>إرسال الطلب</span> <i class="fas fa-paper-plane"></i>';
+        btn.innerHTML = '<span>إرسال طلب التسجيل</span> <i class="fas fa-paper-plane"></i>';
     }
 };
 

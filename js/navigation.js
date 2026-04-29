@@ -604,7 +604,6 @@ function generatePrintDoc(students, columns, customTitle) {
         window.print();
     }, 800);
 }
-}
 
 // Global Selection Toolbar Logic
 window.updateSelectionToolbar = function() {
