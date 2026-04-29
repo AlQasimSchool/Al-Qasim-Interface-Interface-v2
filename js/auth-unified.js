@@ -183,7 +183,7 @@ window.closePromptModal = function() {
 };
 
 window.showActionPrompt = function(options) {
-    const { title, subtitle, icon, placeholder, type, callback, hideInput } = options;
+    const { title, subtitle, icon, placeholder, type, callback, hideInput, maxLength } = options;
     const modal = document.getElementById('promptModal');
     const input = document.getElementById('prompt-input');
     const inputGroup = input.closest('.auth-input-group');
@@ -196,6 +196,11 @@ window.showActionPrompt = function(options) {
     input.value = '';
     input.type = type || 'text';
     input.placeholder = placeholder || '----';
+    if (maxLength) {
+        input.maxLength = maxLength;
+    } else {
+        input.removeAttribute('maxlength');
+    }
     
     if (hideInput) {
         inputGroup.style.display = 'none';
@@ -336,6 +341,7 @@ window.requestPinChange = async function() {
                         icon: "fa-key",
                         placeholder: "0000",
                         type: "password",
+                        maxLength: 4,
                         callback: async (newPin) => {
                             if (!newPin || newPin.length !== 4 || isNaN(newPin)) {
                                 showToast("يجب إدخال 4 أرقام فقط", "error");
@@ -949,7 +955,7 @@ function showToast(message, type = 'info') {
     const icon = type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : type === 'warning' ? 'exclamation-triangle' : 'info-circle';
     
     toast.innerHTML = `<i class="fas fa-${icon}"></i> <span>${message}</span>`;
-    toast.className = `custom-toast active ${type}`;
+    toast.className = `copy-toast active ${type}`;
     
     // Clear any existing timeout to prevent flickering
     if (window.toastTimeout) clearTimeout(window.toastTimeout);
