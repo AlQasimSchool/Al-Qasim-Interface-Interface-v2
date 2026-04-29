@@ -1,0 +1,22 @@
+{
+  "name": "بوابة القاسم الذكية",
+  "short_name": "بوابة القاسم",
+  "description": "التحكم الكامل وإدارة بيانات كشافة عبدالرحمن بن القاسم",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0B0E14",
+  "theme_color": "#111827",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "ico.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "ico.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

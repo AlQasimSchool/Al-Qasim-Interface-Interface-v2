@@ -136,10 +136,22 @@ export async function fetchStudentsFromDoc() {
         }));
 
         state.studentsCache = students;
+        try { localStorage.setItem('offline_students_cache', JSON.stringify(students)); } catch(e) {}
         return students;
     } catch (err) {
         console.error('Students Fetch Error:', err);
-        showToast("فشل تحميل بيانات الطلاب: " + (err.message || "خطأ غير معروف"), "error");
+        
+        // Offline Fallback
+        try {
+            const cached = localStorage.getItem('offline_students_cache');
+            if (cached) {
+                window.showToast("وضع عدم الاتصال: جاري عرض النسخة المحفوظة مسبقاً", "warning");
+                state.studentsCache = JSON.parse(cached);
+                return state.studentsCache;
+            }
+        } catch(e) {}
+
+        window.showToast("فشل تحميل بيانات الطلاب: " + (err.message || "خطأ غير معروف"), "error");
         throw err;
     }
 }

@@ -448,6 +448,52 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     };
 
+    window.exportSelectedStudentsToCSV = function() {
+        if (!state.isStudentsUnlocked) {
+            openPasswordPopup();
+            return;
+        }
+
+        const selected = document.querySelectorAll('.student-checkbox:checked');
+        if (selected.length === 0) {
+            showToast("يرجى تحديد طلاب للتصدير", "warning");
+            return;
+        }
+
+        // CSV Header with BOM for Arabic support in Excel
+        let csvContent = "\uFEFFالاسم,السجل,الجنسية,الشعبة,رقم الجوال\n";
+        
+        selected.forEach(cb => {
+            const id = cb.dataset.id;
+            const student = state.studentsCache.find(s => s.id === id);
+            if (student) {
+                // Escape quotes and format as CSV
+                const name = `"${(student.name || '').replace(/"/g, '""')}"`;
+                const sId = `"${(student.id || '').replace(/"/g, '""')}"`;
+                const nationality = `"${(student.nationality || '').replace(/"/g, '""')}"`;
+                const section = `"${(student.section || '').replace(/"/g, '""')}"`;
+                const phone = `"${(student.phone || '').replace(/"/g, '""')}"`;
+                
+                csvContent += `${name},${sId},${nationality},${section},${phone}\n`;
+            }
+        });
+
+        // Create Blob and download
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement("a");
+        const url = URL.createObjectURL(blob);
+        
+        link.setAttribute("href", url);
+        link.setAttribute("download", `تصدير_طلاب_${new Date().toISOString().split('T')[0]}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        showToast(`تم تصدير ${selected.length} سجل بنجاح`, "success");
+        window.clearStudentSelection();
+    };
+
     window.printSelectedStudents = function() {
         if (!state.isStudentsUnlocked) {
             openPasswordPopup();

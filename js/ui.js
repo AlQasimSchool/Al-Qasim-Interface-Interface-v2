@@ -439,6 +439,9 @@ export const templates = {
                         <button class="toolbar-btn" onclick="window.copySelectedStudents()">
                             <i class="fas fa-copy"></i> <span>نسخ المختار</span>
                         </button>
+                        <button class="toolbar-btn" onclick="window.exportSelectedStudentsToCSV()">
+                            <i class="fas fa-file-excel"></i> <span>تصدير Excel</span>
+                        </button>
                         <button class="toolbar-btn" onclick="window.printSelectedStudents()">
                             <i class="fas fa-print"></i> <span>طباعة المختار</span>
                         </button>
