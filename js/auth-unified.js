@@ -291,41 +291,89 @@ window.verifyAdminAction = async function(callback) {
 };
 
 window.requestPinChange = async function() {
-    setTimeout(() => {
-        window.showActionPrompt({
-            title: "الرقم السري الجديد",
-            subtitle: "أدخل الرقم السري الجديد المكون من 4 أرقام:",
-            icon: "fa-key",
-            placeholder: "0000",
-            type: "password",
-            callback: async (newPin) => {
-                if (!newPin || newPin.length !== 4 || isNaN(newPin)) {
-                    showToast("يجب إدخال 4 أرقام فقط", "error");
-                    return false;
+    // 1. First, send OTP to the user's email
+    showToast("جاري إرسال رمز التحقق إلى بريدك...", "info");
+    const { error: sendError } = await _supabase.auth.signInWithOtp({ 
+        email: currentUser.email 
+    });
+    
+    if (sendError) {
+        showToast("تعذر إرسال الرمز: " + sendError.message, "error");
+        return;
+    }
+
+    // 2. Prompt for OTP
+    window.showActionPrompt({
+        title: "رمز التحقق",
+        subtitle: `أرسلنا رمزاً إلى بريدك (${currentUser.email})، يرجى إدخاله هنا:`,
+        icon: "fa-envelope-open-text",
+        placeholder: "مثال: 123456",
+        type: "text",
+        callback: async (otpToken) => {
+            if (!otpToken || otpToken.length < 6) {
+                showToast("يرجى إدخال الرمز بشكل صحيح", "error");
+                return 'keep-open';
+            }
+            
+            try {
+                // Verify the OTP
+                const { error: verifyError } = await _supabase.auth.verifyOtp({
+                    email: currentUser.email,
+                    token: otpToken,
+                    type: 'email' // Or 'magiclink' depending on Supabase config
+                });
+                
+                if (verifyError) {
+                    showToast("الرمز خاطئ أو منتهي الصلاحية", "error");
+                    return 'keep-open';
                 }
                 
-                try {
-                    const { error: updateError } = await _supabase
-                        .from('admins')
-                        .update({ pin: newPin })
-                        .eq('email', currentUser.email);
-                        
-                    if (updateError) throw updateError;
-                    
-                    showToast("تم تحديث الرقم السري بنجاح", "success");
-                    currentUser.pin = newPin;
-                    window.safeStorage.setItem('admin_session', JSON.stringify(currentUser));
-                    if (window.navigateTo) window.navigateTo('settings');
-                    return true;
-                } catch (e) {
-                    console.error("PIN Update Error:", e);
-                    showToast("فشل التحديث: " + (e.message || ""), "error");
-                    return false;
-                }
+                // OTP is correct, now prompt for the new PIN
+                setTimeout(() => {
+                    window.showActionPrompt({
+                        title: "الرقم السري الجديد",
+                        subtitle: "أدخل الرقم السري الجديد المكون من 4 أرقام:",
+                        icon: "fa-key",
+                        placeholder: "0000",
+                        type: "password",
+                        callback: async (newPin) => {
+                            if (!newPin || newPin.length !== 4 || isNaN(newPin)) {
+                                showToast("يجب إدخال 4 أرقام فقط", "error");
+                                return 'keep-open';
+                            }
+                            
+                            try {
+                                const { error: updateError } = await _supabase
+                                    .from('admins')
+                                    .update({ pin: newPin })
+                                    .eq('email', currentUser.email);
+                                    
+                                if (updateError) throw updateError;
+                                
+                                showToast("تم تحديث الرقم السري بنجاح", "success");
+                                currentUser.pin = newPin;
+                                window.safeStorage.setItem('admin_session', JSON.stringify(currentUser));
+                                if (window.navigateTo) window.navigateTo('settings');
+                                return true;
+                            } catch (e) {
+                                console.error("PIN Update Error:", e);
+                                showToast("فشل التحديث: " + (e.message || ""), "error");
+                                return 'keep-open';
+                            }
+                        }
+                    });
+                }, 300);
+                
+                return true; // close the OTP prompt
+            } catch (err) {
+                console.error("OTP Error:", err);
+                showToast("حدث خطأ في التحقق", "error");
+                return 'keep-open';
             }
-        });
-    }, 100);
+        }
+    });
 };
+
 
 
 window.approveAdminRequest = async function(requestId, name, email) {

@@ -674,7 +674,7 @@ export const templates = {
                                 ${admin.pin ? 'تغيير الرقم السري' : 'تعيين رقم سري'}
                             </button>
                         </div>
-                        <p class="settings-hint-text"><i class="fas fa-bolt"></i> هذا الرقم السري يوفر لك دخولاً سريعاً وآمناً في المرات القادمة.</p>
+                        <p class="settings-hint-text"><i class="fas fa-info-circle"></i> سيصلك كود تحقق على بريدك الإلكتروني لتأكيد هذه الخطوة.</p>
                     </div>
                 </div>
 

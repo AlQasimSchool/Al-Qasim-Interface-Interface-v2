@@ -320,6 +320,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (subtitleEl) subtitleEl.textContent = 'يرجى تأكيد الهوية للوصول لبيانات الطلاب الحساسة';
 
         document.getElementById('biometricOverlay').classList.remove('hidden');
+        const bioContent = document.getElementById('bio-content-area');
+        if (bioContent) bioContent.classList.remove('hidden');
         document.getElementById('lock-pin').value = '';
         
         const isBiometricEnabled = window.safeStorage.getItem('scout-pulse-biometric-enabled') === 'true';
