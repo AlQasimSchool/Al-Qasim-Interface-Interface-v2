@@ -787,12 +787,11 @@ let currentAuthBgIndex = 0;
 let authBgInterval = null;
 
 window.updateAuthBg = function() {
-    const container = document.querySelector('.auth-right-side');
+    const layer = document.querySelector('.auth-image-layer');
     const counter = document.getElementById('auth-bg-counter');
-    if (!container || !counter) return;
+    if (!layer || !counter) return;
 
-    // Apply fade effect if desired, but simple swap for now
-    container.style.backgroundImage = `url('${authBgs[currentAuthBgIndex]}')`;
+    layer.style.backgroundImage = `url('${authBgs[currentAuthBgIndex]}')`;
     counter.textContent = `0${currentAuthBgIndex + 1}/0${authBgs.length}`;
 };
 

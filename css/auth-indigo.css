@@ -1,13 +1,33 @@
 /* Premium Indigo Auth Styles */
 .auth-right-side {
     position: relative;
-    border-radius: 40px; /* Modern rounded corners for the whole side */
+    background: #0f172a; /* Solid Indigo Base */
+    border-radius: 40px;
     margin: 20px;
     overflow: hidden;
     box-shadow: 0 30px 60px rgba(0, 0, 0, 0.4);
     display: flex;
     align-items: center;
     justify-content: center;
+}
+
+.auth-image-layer {
+    position: absolute;
+    inset: 20px; /* Padding from edges to show the indigo background */
+    background-size: cover;
+    background-position: center;
+    border-radius: 30px;
+    opacity: 0.6; /* Semi-transparent to blend with indigo base */
+    z-index: 1;
+    transition: background-image 0.8s ease-in-out;
+}
+
+.auth-image-layer::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(rgba(15, 23, 42, 0.2), rgba(15, 23, 42, 0.8));
+    border-radius: 30px;
 }
 
 .auth-card {
