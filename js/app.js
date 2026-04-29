@@ -272,55 +272,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-    // 3.1 Long Press Logic for Students
-    let longPressTimer;
-    const LONG_PRESS_DURATION = 400; // Softer duration for better UX
-
-    const startLongPress = (e) => {
-        const row = e.target.closest('.student-row');
-        if (!row || !state.isStudentsUnlocked) return;
-
-        // Feedback
-        row.style.transition = 'transform 0.2s';
-        row.style.transform = 'scale(0.97)';
-        row.style.backgroundColor = 'rgba(99, 102, 241, 0.08)';
-
-        longPressTimer = setTimeout(() => {
-            try {
-                const data = JSON.parse(row.dataset.student.replace(/&apos;/g, "'"));
-                const textToCopy = `الاسم: ${data.name}\nالسجل: ${data.id}\nالجنسية: ${data.nationality}\nالشعبة: ${data.section}\nالجوال: ${data.phone}`;
-
-                navigator.clipboard.writeText(textToCopy).then(() => {
-                    showToast(`تم نسخ بيانات: ${data.name}`);
-                    row.style.transform = 'scale(1.02)'; // Quick pop feedback
-                    setTimeout(() => {
-                        row.style.transform = '';
-                        row.style.backgroundColor = '';
-                    }, 200);
-                    
-                    if (window.navigator.vibrate) window.navigator.vibrate([40, 30, 40]);
-                });
-            } catch (err) {
-                console.error("Long press copy failed", err);
-            }
-        }, LONG_PRESS_DURATION);
-    };
-
-    const cancelLongPress = (e) => {
-        clearTimeout(longPressTimer);
-        const row = e.target.closest('.student-row');
-        if (row) {
-            row.style.transform = '';
-            row.style.backgroundColor = '';
-        }
-    };
-
-    document.body.addEventListener('mousedown', startLongPress);
-    document.body.addEventListener('mouseup', cancelLongPress);
-    document.body.addEventListener('mouseleave', cancelLongPress);
-    document.body.addEventListener('touchstart', startLongPress, { passive: true });
-    document.body.addEventListener('touchend', cancelLongPress, { passive: true });
-    document.body.addEventListener('touchcancel', cancelLongPress, { passive: true });
+    // Long press logic removed to standardize on selection toolbar
 
     function openVideo(videoId) {
         const modal = document.createElement('div');
