@@ -72,7 +72,7 @@ async function checkSession() {
                 if (currentUser.pin) {
                     authOverlay.classList.add('hidden');
                     bioOverlay.classList.remove('hidden');
-                    if (bioContent) bioContent.classList.remove('hidden');
+                    if (bioContent) bioContent.classList.add('hidden');
                     
                     const isBiometricEnabled = window.safeStorage.getItem('scout-pulse-biometric-enabled') === 'true';
                     if (isBiometricEnabled) {
@@ -398,7 +398,6 @@ window.loginWithPassword = async function() {
 
 // Deprecated OTP functions (keeping for compatibility if needed)
 window.sendLoginOtp = () => showToast("تم استبدال نظام الرمز بكلمة المرور", "info");
-window.verifyAuthCode = () => {};
 
 async function toggleBiometricLock(checkbox) {
     if (checkbox.checked) {
@@ -696,8 +695,6 @@ window.openPasswordPopup = function() {
 };
 
 window._supabase = _supabase;
-window.sendAuthCode = sendAuthCode;
-window.verifyAuthCode = verifyAuthCode;
 // Auth Background Slider Logic
 const authBgs = [
     'imgs/image (1).png',
