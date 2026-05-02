@@ -730,7 +730,7 @@ async function toggleScanner(state) {
                 showToast("❌ فشل تشغيل القارئ: " + err.message, "error");
             }
         } else {
-            showToast("⚠️ الـ NFC غير مدعوم في هذا المتصفح. يمكنك استخدام لوحة المفاتيح.", "info");
+            console.log("Web NFC API not available — using keyboard wedge for USB NFC reader.");
         }
     }
 }
@@ -786,8 +786,8 @@ async function clearAnyNfcCard() {
     const sub = document.getElementById('writeOverlaySub');
     const targetName = document.getElementById('writeTargetName');
     
-    if (title) title.textContent = "جاري مسح البطاقة...";
-    if (sub) sub.innerHTML = "يرجى تقريب البطاقة من **القارئ** للمسح النهائي";
+    if (title) title.textContent = "مسح ربط البطاقة";
+    if (sub) sub.innerHTML = "مرر البطاقة على القارئ لإزالة ربطها بالكشاف";
     if (targetName) targetName.textContent = "";
 
     isProgramming = true;
@@ -802,8 +802,8 @@ async function clearAnyNfcCard() {
     // إيقاف أي عملية مسح نشطة لتجنب التداخل
     if (isScanning) toggleScanner(false);
 
-    try {
-        if ('NDEFReader' in window) {
+    if ('NDEFReader' in window) {
+        try {
             abortController = new AbortController();
             const ndef = new NDEFReader();
             await ndef.write("", { signal: abortController.signal });
@@ -812,15 +812,65 @@ async function clearAnyNfcCard() {
             document.getElementById('writeStatus').classList.add('hidden');
             document.getElementById('writeSuccess').classList.remove('hidden');
             setTimeout(stopProgramming, 2000);
-        } else {
-            showToast("⚠️ متصفحك لا يدعم NFC", "error");
+        } catch (error) {
+            console.error(error);
+            if (error.name !== 'AbortError') {
+                showToast("❌ فشل مسح البطاقة: " + error.message, "error");
+            }
             stopProgramming();
         }
-    } catch (error) {
-        console.error(error);
-        if (error.name !== 'AbortError') {
-            showToast("❌ فشل مسح البطاقة: " + error.message, "error");
+    } else {
+        // Desktop: scan card via USB reader, then remove its link from DB
+        let clearBuffer = '';
+        let clearTimer;
+        
+        window._progKeyHandler = function(e) {
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+            
+            if (/^\d$/.test(e.key)) {
+                clearBuffer += e.key;
+                clearTimeout(clearTimer);
+                clearTimer = setTimeout(() => { clearBuffer = ''; }, 150);
+            } else if (e.key === 'Enter' && clearBuffer.length >= 4) {
+                const cardUID = clearBuffer;
+                clearBuffer = '';
+                e.preventDefault();
+                document.removeEventListener('keydown', window._progKeyHandler);
+                
+                // Find scout with this card and remove link
+                unlinkCard(cardUID);
+            }
+        };
+        
+        document.addEventListener('keydown', window._progKeyHandler);
+    }
+}
+
+async function unlinkCard(cardUID) {
+    try {
+        const scout = scouts.find(s => s.nfc_uid === cardUID);
+        
+        if (scout) {
+            await _supabase
+                .from('scouts')
+                .update({ nfc_uid: null })
+                .eq('id', scout.id);
+            
+            scout.nfc_uid = null;
+            showToast(`✅ تم إزالة ربط البطاقة من ${scout.name}`, "success");
+        } else {
+            showToast("⚠️ هذه البطاقة غير مربوطة بأي كشاف", "info");
         }
+        
+        document.getElementById('writeStatus').classList.add('hidden');
+        document.getElementById('writeSuccess').classList.remove('hidden');
+        const successTitle = document.getElementById('writeSuccess').querySelector('h3');
+        if (successTitle) successTitle.textContent = "تم مسح الربط!";
+        
+        setTimeout(stopProgramming, 2000);
+    } catch (err) {
+        console.error("Unlink Error:", err);
+        showToast("❌ فشل إزالة الربط: " + err.message, "error");
         stopProgramming();
     }
 }
@@ -832,11 +882,6 @@ async function startProgramming(scoutId) {
         return;
     }
 
-    if (!('NDEFReader' in window)) {
-        showToast("⚠️ المتصفح لا يدعم NFC حالياً", "error");
-        return;
-    }
-
     isProgramming = true;
     const overlay = document.getElementById('writeOverlay');
     overlay.classList.remove('hidden');
@@ -845,29 +890,93 @@ async function startProgramming(scoutId) {
     document.getElementById('writeSuccess').classList.add('hidden');
     document.getElementById('writeStatus').classList.remove('hidden');
     
+    // Update overlay text for linking mode
+    const title = document.getElementById('writeOverlayTitle');
+    const sub = document.getElementById('writeOverlaySub');
+    if (title) title.textContent = "ربط البطاقة";
+    if (sub) sub.innerHTML = `مرر بطاقة الكشاف <span class="text-indigo-400 font-bold">${scout.name}</span> على القارئ الآن`;
+
     const bottomNav = document.getElementById('mobileBottomNav');
     if(bottomNav) bottomNav.style.visibility = 'hidden';
     
     // إيقاف أي عملية مسح نشطة لتجنب التداخل
     if (isScanning) toggleScanner(false);
 
+    if ('NDEFReader' in window) {
+        // Mobile: Use Web NFC API to write to the tag
+        try {
+            abortController = new AbortController();
+            const ndef = new NDEFReader();
+            await ndef.write({
+                records: [{ recordType: "text", data: String(scoutId) }]
+            }, { signal: abortController.signal });
+            
+            document.getElementById('writeStatus').classList.add('hidden');
+            document.getElementById('writeSuccess').classList.remove('hidden');
+            if(window.safeStorage.getItem('scout-pulse-sound') !== 'false') playBeep();
+            
+            setTimeout(stopProgramming, 3000);
+        } catch (error) {
+            console.error("NFC Write Error:", error);
+            if (error.name !== 'AbortError') {
+                showToast("❌ فشلت عملية البرمجة: " + error.message, "error");
+            }
+            stopProgramming();
+        }
+    } else {
+        // Desktop: Use USB NFC reader (keyboard wedge) — listen for card UID scan
+        let progBuffer = '';
+        let progTimer;
+        
+        window._progKeyHandler = function(e) {
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+            
+            if (/^\d$/.test(e.key)) {
+                progBuffer += e.key;
+                clearTimeout(progTimer);
+                progTimer = setTimeout(() => { progBuffer = ''; }, 150);
+            } else if (e.key === 'Enter' && progBuffer.length >= 4) {
+                const cardUID = progBuffer;
+                progBuffer = '';
+                e.preventDefault();
+                
+                // Link this card UID to the scout in the database
+                linkCardToScout(scoutId, cardUID, scout.name);
+                document.removeEventListener('keydown', window._progKeyHandler);
+            }
+        };
+        
+        document.addEventListener('keydown', window._progKeyHandler);
+    }
+}
+
+async function linkCardToScout(scoutId, cardUID, scoutName) {
     try {
-        abortController = new AbortController();
-        const ndef = new NDEFReader();
-        await ndef.write({
-            records: [{ recordType: "text", data: String(scoutId) }]
-        }, { signal: abortController.signal });
+        // Save the card UID mapping in Supabase
+        const { error } = await _supabase
+            .from('scouts')
+            .update({ nfc_uid: cardUID })
+            .eq('id', scoutId);
+        
+        if (error) throw error;
+        
+        // Update local data
+        const scout = scouts.find(s => String(s.id).trim() === String(scoutId).trim());
+        if (scout) scout.nfc_uid = cardUID;
         
         document.getElementById('writeStatus').classList.add('hidden');
         document.getElementById('writeSuccess').classList.remove('hidden');
+        
+        const successTitle = document.getElementById('writeSuccess').querySelector('h3');
+        if (successTitle) successTitle.textContent = "تم ربط البطاقة بنجاح!";
+        
         if(window.safeStorage.getItem('scout-pulse-sound') !== 'false') playBeep();
+        showToast(`✅ تم ربط البطاقة ${cardUID} بالكشاف ${scoutName}`, "success");
         
         setTimeout(stopProgramming, 3000);
-    } catch (error) {
-        console.error("NFC Write Error:", error);
-        if (error.name !== 'AbortError') {
-            showToast("❌ فشلت عملية البرمجة: " + error.message, "error");
-        }
+    } catch (err) {
+        console.error("Link Card Error:", err);
+        showToast("❌ فشل ربط البطاقة: " + err.message, "error");
         stopProgramming();
     }
 }
@@ -878,15 +987,22 @@ function stopProgramming() {
         abortController.abort();
         abortController = null;
     }
+    // Clean up keyboard wedge listener if active
+    if (window._progKeyHandler) {
+        document.removeEventListener('keydown', window._progKeyHandler);
+        window._progKeyHandler = null;
+    }
     document.getElementById('writeOverlay').style.display = 'none';
     document.getElementById('writeOverlay').classList.add('hidden');
     
     const bottomNav = document.getElementById('mobileBottomNav');
     if(bottomNav) bottomNav.style.visibility = 'visible';
     
-    // إعادة تعيين نصوص النجاح إذا تغيرت
+    // إعادة تعيين نصوص النجاح والعنوان
     const successTitle = document.getElementById('writeSuccess').querySelector('h3');
     if (successTitle) successTitle.textContent = "تمت البرمجة بنجاح!";
+    const overlayTitle = document.getElementById('writeOverlayTitle');
+    if (overlayTitle) overlayTitle.textContent = "جاهز للبرمجة";
 }
 
 
