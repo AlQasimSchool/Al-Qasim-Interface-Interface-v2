@@ -296,18 +296,7 @@ function updateDashboard() {
     const isTargetHoliday = (dayOfWeek === 5 || dayOfWeek === 6);
     const isTodayHoliday = (now.getDay() === 5 || now.getDay() === 6);
 
-    const startBtn = document.getElementById('startScanBtn');
-    if (startBtn) {
-        if (isTodayHoliday) {
-            startBtn.disabled = true;
-            startBtn.classList.add('opacity-50', 'cursor-not-allowed', 'grayscale');
-            startBtn.style.pointerEvents = 'none';
-        } else {
-            startBtn.disabled = false;
-            startBtn.classList.remove('opacity-50', 'cursor-not-allowed', 'grayscale');
-            startBtn.style.pointerEvents = 'auto';
-        }
-    }
+    // زر التحضير يبقى متاحاً دائماً (حتى في أيام الإجازة للأيام الاستثنائية)
 
     // إظهار تنبيه الإجازة
     document.querySelectorAll('.holiday-notice').forEach(el => {
