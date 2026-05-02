@@ -1004,7 +1004,7 @@ function setupKeyboardEmulator() {
         }
 
         if(e.key === 'Enter') {
-            if(keyboardBuffer.length >= 8) {
+            if(keyboardBuffer.length >= 4) {
                 // We got a full scan! Auto-process it even if isScanning is false.
                 handleScan(keyboardBuffer);
             }
@@ -1033,12 +1033,16 @@ async function handleScan(id) {
         }
     }
     
-    // البحث عن الكشاف باستخدام المعرف المعالج
-    const scout = scouts.find(s => String(s.id).trim() === String(processedId).trim());
+    // البحث عن الكشاف باستخدام المعرف المعالج (أو عبر nfc_uid)
+    const scout = scouts.find(s => 
+        String(s.id).trim() === String(processedId).trim() || 
+        (s.nfc_uid && String(s.nfc_uid).trim() === String(processedId).trim())
+    );
     const res = document.getElementById('scanResult');
-    res.classList.remove('hidden', 'bg-emerald-500', 'bg-rose-500');
+    if (res) res.classList.remove('hidden', 'bg-emerald-500', 'bg-rose-500');
 
     if(scout) {
+        const actualScoutId = scout.id;
         try {
             const now = new Date();
             const todayISO = now.toISOString().split('T')[0];
@@ -1048,29 +1052,36 @@ async function handleScan(id) {
             const { data: existing } = await _supabase
                 .from('attendance')
                 .select('*')
-                .eq('scout_id', processedId)
+                .eq('scout_id', actualScoutId)
                 .filter('created_at', 'gte', todayISO + 'T00:00:00Z');
 
             if(existing && existing.length > 0) {
-                res.textContent = `⚠️ ${scout.name} محضر بالفعل!`;
-                res.classList.add('bg-rose-500');
+                if (res) {
+                    res.textContent = `⚠️ ${scout.name} محضر بالفعل!`;
+                    res.classList.add('bg-rose-500');
+                } else {
+                    showToast(`⚠️ ${scout.name} محضر بالفعل!`, "warning");
+                }
             } else {
                 // تسجيل الحضور بالصيغة العالمية لضمان عمل التقارير
                 await _supabase.from('attendance').insert({
-                    scout_id: processedId,
+                    scout_id: actualScoutId,
                     date: todayAr // نحتفظ بالعربي للعرض فقط
                 });
 
                 // إضافة للسجل المحلي فوراً لتحسين الاستجابة السريعة
                 attendance.unshift({
-                    studentId: processedId,
+                    studentId: actualScoutId,
                     time: new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }),
                     date: todayAr,
                     isoDate: todayISO
                 });
 
-                res.textContent = `✅ تم تحضير: ${scout.name}`;
-                res.classList.add('bg-emerald-500');
+                if (res) {
+                    res.textContent = `✅ تم تحضير: ${scout.name}`;
+                    res.classList.add('bg-emerald-500');
+                }
+                showToast(`✅ تم تحضير: ${scout.name}`, "success");
                 if(window.safeStorage.getItem('scout-pulse-sound') !== 'false') playBeep();
                 
                 // Add to recent scans
@@ -1087,11 +1098,14 @@ async function handleScan(id) {
             }
         } catch (e) { console.error(e); }
     } else {
-        res.textContent = "❌ كشاف غير معروف!";
-        res.classList.add('bg-rose-500');
+        if (res) {
+            res.textContent = "❌ كشاف غير معروف!";
+            res.classList.add('bg-rose-500');
+        }
+        showToast("❌ هذه البطاقة غير مسجلة في النظام", "error");
     }
     
-    setTimeout(() => { if(isScanning) res.classList.add('hidden'); }, 3000);
+    setTimeout(() => { if(isScanning && res) res.classList.add('hidden'); }, 3000);
 }
 
 function updateScansList(logs, period) {
