@@ -151,14 +151,19 @@ function init() {
         }
     });
 
-    // تهيئة القفل بالبصمة إذا كان مفعلاً
-    const isBiometricEnabled = window.safeStorage.getItem('scout-pulse-biometric-enabled') === 'true';
-    if (isBiometricEnabled && currentUser) {
-        document.getElementById('biometricOverlay').classList.remove('hidden');
-        const bioToggle = document.getElementById('setting-biometric');
-        if (bioToggle) bioToggle.checked = true;
-        // محاولة الفتح التلقائي عند التحميل
-        setTimeout(requestBiometricAccess, 1000);
+    // تهيئة القفل بالبصمة إذا كان مفعلاً لهذا الحساب
+    if (currentUser) {
+        const bioKey = `scout-pulse-biometric-enabled-${currentUser.email}`;
+        const isBiometricEnabled = window.safeStorage.getItem(bioKey) === 'true';
+        if (isBiometricEnabled) {
+            document.getElementById('biometricOverlay').classList.remove('hidden');
+            const bioToggle = document.getElementById('setting-biometric');
+            if (bioToggle) bioToggle.checked = true;
+            // محاولة الفتح التلقائي عند التحميل
+            setTimeout(() => {
+                if (window.requestBiometricAccess) window.requestBiometricAccess(true);
+            }, 1000);
+        }
     }
 
     const urlParams = new URLSearchParams(window.location.search);
@@ -888,14 +893,21 @@ function stopProgramming() {
 
 function setupKeyboardEmulator() {
     document.addEventListener('keydown', e => {
-        if(!isScanning) return;
+        // Ignored if typing in a normal input
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+            return;
+        }
+
         if(e.key === 'Enter') {
-            if(keyboardBuffer) handleScan(keyboardBuffer);
+            if(keyboardBuffer.length >= 8) {
+                // We got a full scan! Auto-process it even if isScanning is false.
+                handleScan(keyboardBuffer);
+            }
             keyboardBuffer = "";
-        } else if(e.key.length === 1) {
+        } else if(e.key.length === 1 && /^\d$/.test(e.key)) {
             keyboardBuffer += e.key;
             clearTimeout(bufferTimer);
-            bufferTimer = setTimeout(() => keyboardBuffer = "", 500);
+            bufferTimer = setTimeout(() => keyboardBuffer = "", 150);
         }
     });
 }
@@ -903,7 +915,6 @@ function setupKeyboardEmulator() {
 let recentScans = [];
 
 async function handleScan(id) {
-    if(!isScanning) return;
     
     // إذا كان المعرف عبارة عن رابط (بسبب الحل الجذري)، نستخرج الرقم منه
     let processedId = id;

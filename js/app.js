@@ -140,10 +140,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             openPasswordPopup();
         }
 
-        // Students print
-        if (e.target.closest('#print-students-btn')) {
-            window.openPrintModal();
-        }
+
 
         // Sidebar Tasks
         if (e.target.closest('#add-sidebar-task') || e.target.closest('#add-sidebar-note')) {
@@ -515,10 +512,54 @@ document.addEventListener('DOMContentLoaded', async () => {
         handleGlobalSearch(e.target.value);
     });
 
-    // Enter key for students password
+    // Global NFC / Barcode Keyboard Wedge Listener
+    let nfcBuffer = '';
+    let nfcTimeout;
+
     document.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' && e.target.id === 'students-password') {
-            unlockStudentsPage();
+        // Ignored if typing in a normal text/password input
+        if (e.target.tagName === 'INPUT' && e.target.type !== 'radio' && e.target.type !== 'checkbox') {
+            // Except if it's the student search bar, let it type naturally
+            // But if it's an Enter key and length is exactly 10, maybe we can auto-search
+            if (e.key === 'Enter' && e.target.id === 'students-password') {
+                unlockStudentsPage();
+            }
+            return;
+        }
+
+        // Only allow numbers for NFC
+        if (/^\d$/.test(e.key)) {
+            nfcBuffer += e.key;
+            clearTimeout(nfcTimeout);
+            nfcTimeout = setTimeout(() => { nfcBuffer = ''; }, 100); // 100ms timeout for fast scanning
+        } else if (e.key === 'Enter') {
+            if (nfcBuffer.length >= 8) { // Typically 10 digits
+                const scannedId = nfcBuffer;
+                nfcBuffer = '';
+                e.preventDefault();
+                
+                // We got a scan! 
+                showToast(`تم مسح البطاقة: ${scannedId}`, 'success');
+                
+                // If we are on the students page, search for this student
+                if (document.getElementById('students-search')) {
+                    const searchBox = document.getElementById('students-search');
+                    searchBox.value = scannedId;
+                    handleStudentsSearch(scannedId);
+                } else {
+                    // Navigate to students page and search
+                    navigateTo('students');
+                    setTimeout(() => {
+                        const searchBox = document.getElementById('students-search');
+                        if (searchBox) {
+                            searchBox.value = scannedId;
+                            handleStudentsSearch(scannedId);
+                        }
+                    }, 500);
+                }
+            } else {
+                nfcBuffer = ''; // Reset if not a valid scan length
+            }
         }
     });
 

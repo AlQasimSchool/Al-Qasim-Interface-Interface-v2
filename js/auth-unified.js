@@ -107,8 +107,11 @@ async function checkSession() {
                     // Hide X button if this is the initial app lock
                     const closeBtn = document.querySelector('#biometricOverlay .modal-close-btn');
                     if (closeBtn && !window.pendingUnlock) closeBtn.style.display = 'none';
+                    const bioKey = `scout-pulse-biometric-enabled-${adminSession.email}`;
+                    const isBiometricEnabled = window.safeStorage.getItem(bioKey) === 'true';
                     if (isBiometricEnabled) {
-                        requestBiometricAccess();
+                        // Attempt automatic prompt, but don't show error if blocked by browser (user gesture requirement)
+                        requestBiometricAccess(true); 
                     }
                 } else {
                     showAuthStep(1);
@@ -518,13 +521,19 @@ window.handleForgotPassword = async function() {
 window.sendLoginOtp = () => showToast("تم استبدال نظام الرمز بكلمة المرور", "info");
 
 async function toggleBiometricLock(checkbox) {
+    const adminSession = JSON.parse(window.safeStorage.getItem('admin_session') || '{}');
+    const email = currentUser?.email || adminSession?.email;
+    
+    if (!email) {
+        showToast("خطأ: يرجى تسجيل الدخول أولاً", "error");
+        checkbox.checked = false;
+        return;
+    }
+
+    const bioKey = `scout-pulse-biometric-enabled-${email}`;
+    const bioIdKey = `scout-pulse-biometric-id-${email}`;
+
     if (checkbox.checked) {
-        const available = await window.PublicKeyCredential?.isUserVerifyingPlatformAuthenticatorAvailable();
-        if (!available) {
-            showToast("جهازك لا يدعم البصمة أو الوجه في المتصفح", "error");
-            checkbox.checked = false;
-            return;
-        }
 
         try {
             const challenge = new Uint8Array(32);
@@ -535,22 +544,27 @@ async function toggleBiometricLock(checkbox) {
                     challenge,
                     rp: { name: "Al-Qasim PC Interface" },
                     user: {
-                        id: Uint8Array.from(currentUser.id.replace(/-/g, ""), c => c.charCodeAt(0)),
+                        id: Uint8Array.from((currentUser.id || currentUser.email).replace(/-/g, "").substring(0, 32), c => c.charCodeAt(0)),
                         name: currentUser.email,
                         displayName: currentUser.full_name || currentUser.email
                     },
                     pubKeyCredParams: [{ alg: -7, type: "public-key" }, { alg: -257, type: "public-key" }],
                     authenticatorSelection: { 
                         authenticatorAttachment: "platform",
-                        userVerification: "required" 
+                        userVerification: "preferred",
+                        residentKey: "preferred",
+                        requireResidentKey: false
                     },
                     timeout: 60000
                 }
             });
 
             if (credential) {
-                window.safeStorage.setItem('scout-pulse-biometric-enabled', 'true');
-                showToast("تم تفعيل القفل بالبصمة بنجاح", "success");
+                // Store Credential ID to link it to this specific account
+                const idBase64 = btoa(String.fromCharCode(...new Uint8Array(credential.rawId)));
+                window.safeStorage.setItem(bioIdKey, idBase64);
+                window.safeStorage.setItem(bioKey, 'true');
+                showToast("تم ربط البصمة بحسابك بنجاح", "success");
             }
         } catch (err) {
             console.error(err);
@@ -558,15 +572,26 @@ async function toggleBiometricLock(checkbox) {
             checkbox.checked = false;
         }
     } else {
-        window.safeStorage.removeItem('scout-pulse-biometric-enabled');
-        showToast("تم إيقاف القفل بالبصمة", "info");
+        window.safeStorage.removeItem(bioKey);
+        window.safeStorage.removeItem(bioIdKey);
+        showToast("تم إزالة ربط البصمة", "info");
     }
 }
 
-async function requestBiometricAccess() {
-    const isBiometricEnabled = window.safeStorage.getItem('scout-pulse-biometric-enabled') === 'true';
-    if (!isBiometricEnabled) {
-        showToast("البصمة غير مفعلة، يرجى استخدام الرقم السري", "warning");
+async function requestBiometricAccess(isAutoPrompt = false) {
+    const adminSession = JSON.parse(window.safeStorage.getItem('admin_session') || '{}');
+    const email = adminSession?.email;
+    
+    if (!email) return;
+
+    const bioKey = `scout-pulse-biometric-enabled-${email}`;
+    const bioIdKey = `scout-pulse-biometric-id-${email}`;
+    
+    const isBiometricEnabled = window.safeStorage.getItem(bioKey) === 'true';
+    const storedIdBase64 = window.safeStorage.getItem(bioIdKey);
+
+    if (!isBiometricEnabled || !storedIdBase64) {
+        if (!isAutoPrompt) showToast("البصمة غير مفعلة لهذا الحساب", "warning");
         return;
     }
 
@@ -574,20 +599,38 @@ async function requestBiometricAccess() {
         const challenge = new Uint8Array(32);
         window.crypto.getRandomValues(challenge);
 
+        // Convert stored ID back to Uint8Array
+        const rawId = Uint8Array.from(atob(storedIdBase64), c => c.charCodeAt(0));
+
         const assertion = await navigator.credentials.get({
             publicKey: {
                 challenge,
                 timeout: 60000,
-                userVerification: "required"
+                userVerification: "preferred",
+                mediation: "optional",
+                allowCredentials: [{
+                    id: rawId,
+                    type: "public-key"
+                }]
             }
         });
 
         if (assertion) {
+            // Check if the ID matches what we expect (though allowCredentials does this for us)
+            const returnedIdBase64 = btoa(String.fromCharCode(...new Uint8Array(assertion.rawId)));
+            if (returnedIdBase64 !== storedIdBase64) {
+                throw new Error("بصمة غير مطابقة لهذا الحساب");
+            }
+
             document.getElementById('biometricOverlay').classList.add('hidden');
             if (window.pendingUnlock === 'students') {
                 window.pendingUnlock = null;
                 if (window.unblurStudentsData) window.unblurStudentsData();
-                import('./state.js').then(({ state }) => state.isStudentsUnlocked = true);
+                if (window.state) {
+                    window.state.isStudentsUnlocked = true;
+                } else {
+                    import('./state.js').then(({ state }) => state.isStudentsUnlocked = true);
+                }
                 showToast("تم إظهار معلومات الطلاب بنجاح", "success");
             } else {
                 showToast("تم التحقق، مرحباً بك مجدداً", "success");
@@ -595,8 +638,15 @@ async function requestBiometricAccess() {
             }
         }
     } catch (err) {
-        console.error(err);
-        showToast("فشل التحقق، حاول مرة أخرى", "error");
+        console.error("Biometric Error:", err);
+        // Don't show toast if it's an auto-prompt that got blocked or cancelled
+        if (!isAutoPrompt) {
+            if (err.name === 'NotAllowedError') {
+                showToast("فشل التحقق: يرجى الضغط على أيقونة البصمة للمحاولة مجدداً", "info");
+            } else {
+                showToast("فشل التحقق، حاول مرة أخرى", "error");
+            }
+        }
     }
 }
 

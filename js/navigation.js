@@ -409,11 +409,7 @@ export async function renderStudents() {
             };
         });
 
-        // Attach print modal caller
-        const printBtn = document.getElementById('print-students-btn');
-        if (printBtn) {
-            printBtn.onclick = () => window.openPrintModal(students);
-        }
+
     } catch (err) {
         console.error("Students render error", err);
         container.innerHTML = `
@@ -535,6 +531,9 @@ function generatePrintDoc(students, columns, customTitle) {
     const headerHtml = `
         <div class="print-doc-container" style="font-family: 'Cairo', sans-serif; direction: rtl; padding: 20px; color: #000; background: #fff; margin: 0;">
             <style>
+                @media screen {
+                    #print-section { display: none !important; }
+                }
                 @media print {
                     @page { margin: 1cm; }
                     body { background: white; }
@@ -553,12 +552,12 @@ function generatePrintDoc(students, columns, customTitle) {
                 <div style="text-align: right; line-height: 1.4; flex: 1;">
                     <p style="margin: 0; font-size: 12px; font-weight: bold;">المملكة العربية السعودية</p>
                     <p style="margin: 0; font-size: 12px; font-weight: bold;">وزارة التعليم</p>
-                    <p style="margin: 0; font-size: 11px;">إدارة تعليم منطقة مكة المكرمة</p>
-                    <p style="margin: 0; font-size: 11px;">ثانوية عبد الرحمن بن القاسم</p>
+                    <p style="margin: 0; font-size: 11px;">إدارة التعليم بالمنطقة الشرقية</p>
+                    <p style="margin: 0; font-size: 11px;">مكتب التعليم بمحافظة الخبر</p>
                 </div>
                 <div style="text-align: center; flex: 1.5; padding-top: 10px;">
                     <h2 style="margin: 0; font-size: 20px; font-weight: 900; color: #000;">${customTitle}</h2>
-                    <p style="margin: 5px 0 0 0; font-size: 13px; font-weight: bold;">الفرقة الكشفية — العام الدراسي 1447 هـ</p>
+                    <p style="margin: 5px 0 0 0; font-size: 13px; font-weight: bold;">كشافة عبدالرحمن بن القاسم — العام الدراسي 1447 هـ</p>
                 </div>
                 <div style="text-align: left; line-height: 1.4; flex: 1;">
                     <p style="margin: 0; font-size: 11px;">التاريخ: ${new Date().toLocaleDateString('ar-EG')}</p>
@@ -612,6 +611,11 @@ function generatePrintDoc(students, columns, customTitle) {
     
     setTimeout(() => {
         window.print();
+        setTimeout(() => {
+            if (printSection && printSection.parentNode) {
+                printSection.parentNode.removeChild(printSection);
+            }
+        }, 1000);
     }, 800);
 }
 

@@ -802,6 +802,3 @@
     tr { page-break-inside: avoid; }
     thead { display: table-header-group; }
 }
-
-/* Toast Adjustment for Mobile */
-@media (max-width: 850px) { .copy-toast { bottom: 110px !important; z-index: 30000 !important; } }
