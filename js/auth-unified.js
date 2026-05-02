@@ -100,18 +100,27 @@ async function checkSession() {
                 }
 
                 if (currentUser.pin) {
-                    authOverlay.classList.add('hidden');
-                    bioOverlay.classList.remove('hidden');
-                    if (bioContent) bioContent.classList.remove('hidden');
+                    const isSessionUnlocked = sessionStorage.getItem('scout_pulse_unlocked') === 'true';
                     
-                    // Hide X button if this is the initial app lock
-                    const closeBtn = document.querySelector('#biometricOverlay .modal-close-btn');
-                    if (closeBtn && !window.pendingUnlock) closeBtn.style.display = 'none';
-                    const bioKey = `scout-pulse-biometric-enabled-${adminSession.email}`;
-                    const isBiometricEnabled = window.safeStorage.getItem(bioKey) === 'true';
-                    if (isBiometricEnabled) {
-                        // Attempt automatic prompt, but don't show error if blocked by browser (user gesture requirement)
-                        requestBiometricAccess(true); 
+                    if (isSessionUnlocked) {
+                        // Skip lock screen if already unlocked in this session
+                        authOverlay.classList.add('hidden');
+                        bioOverlay.classList.add('hidden');
+                        if (window.updateGreeting) window.updateGreeting();
+                    } else {
+                        authOverlay.classList.add('hidden');
+                        bioOverlay.classList.remove('hidden');
+                        if (bioContent) bioContent.classList.remove('hidden');
+                        
+                        // Hide X button if this is the initial app lock
+                        const closeBtn = document.querySelector('#biometricOverlay .modal-close-btn');
+                        if (closeBtn && !window.pendingUnlock) closeBtn.style.display = 'none';
+                        const bioKey = `scout-pulse-biometric-enabled-${adminSession.email}`;
+                        const isBiometricEnabled = window.safeStorage.getItem(bioKey) === 'true';
+                        if (isBiometricEnabled) {
+                            // Attempt automatic prompt, but don't show error if blocked by browser (user gesture requirement)
+                            requestBiometricAccess(true); 
+                        }
                     }
                 } else {
                     showAuthStep(1);
@@ -157,6 +166,7 @@ window.verifyPinCode = function() {
     const pin = pinInput.value;
     
     if (currentUser && currentUser.pin && pin === currentUser.pin) {
+        sessionStorage.setItem('scout_pulse_unlocked', 'true');
         document.getElementById('biometricOverlay').classList.add('hidden');
         // Verification message removed as per user request
         
@@ -622,6 +632,7 @@ async function requestBiometricAccess(isAutoPrompt = false) {
                 throw new Error("بصمة غير مطابقة لهذا الحساب");
             }
 
+            sessionStorage.setItem('scout_pulse_unlocked', 'true');
             document.getElementById('biometricOverlay').classList.add('hidden');
             if (window.pendingUnlock === 'students') {
                 window.pendingUnlock = null;
@@ -907,6 +918,7 @@ document.addEventListener('DOMContentLoaded', window.checkRegistrationStatus);
 function logout() {
     window.showConfirm("تسجيل الخروج", "هل أنت متأكد أنك تريد تسجيل الخروج من النظام؟", () => {
         window.safeStorage.removeItem('admin_session');
+        sessionStorage.removeItem('scout_pulse_unlocked');
         location.reload();
     });
 }
