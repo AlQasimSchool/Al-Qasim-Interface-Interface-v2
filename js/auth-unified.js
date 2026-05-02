@@ -5,7 +5,14 @@
 
 var SUPABASE_URL = 'https://unxhursbcavdaunuvbhr.supabase.co';
 var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVueGh1cnNiY2F2ZGF1bnV2YmhyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY5Mzg4NTksImV4cCI6MjA5MjUxNDg1OX0.56EwISYcShglg-Q_2thnrtJSAXMKkHO1Zmvo_ZC6c4w';
-var _supabase = window._supabase || supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// Ensure supabase is on window for other scripts
+if (!window.supabase && typeof supabase !== 'undefined') {
+    window.supabase = supabase;
+}
+
+var _supabase = window._supabase || (window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null);
+window._supabase = _supabase;
 
 var currentUser = null;
 var tempLoginData = null;
@@ -60,12 +67,16 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 async function checkSession() {
-    const authLoading = document.getElementById('auth-loading-state');
-    const authStep1 = document.getElementById('auth-step-1');
-    const bioLoading = document.getElementById('bio-loading-state');
-    const bioContent = document.getElementById('bio-content-area');
     const authOverlay = document.getElementById('authOverlay');
     const bioOverlay = document.getElementById('biometricOverlay');
+    const authLoading = document.getElementById('auth-loading-state');
+    const bioLoading = document.getElementById('bio-loading-state');
+    const bioContent = document.getElementById('bio-content-area');
+    const authStep1 = document.getElementById('auth-step-1');
+
+    // Show loading immediately to avoid UI jumping
+    if (authLoading) authLoading.classList.remove('hidden');
+    if (bioLoading) bioLoading.classList.remove('hidden');
 
     const session = window.safeStorage.getItem('admin_session');
     
@@ -96,7 +107,7 @@ async function checkSession() {
                     greetingEl.textContent = `مرحباً ${currentUser.full_name.split(' ')[0]}`;
                 }
                 if (subtitleEl) {
-                    subtitleEl.textContent = 'أدخل الرقم السري للعبور أو استخدم البصمة';
+                    subtitleEl.textContent = 'أدخل الرقم السري للعبور للمتابعة';
                 }
 
                 if (currentUser.pin) {
@@ -104,23 +115,17 @@ async function checkSession() {
                     
                     if (isSessionUnlocked) {
                         // Skip lock screen if already unlocked in this session
-                        authOverlay.classList.add('hidden');
-                        bioOverlay.classList.add('hidden');
+                        if (authOverlay) authOverlay.classList.add('hidden');
+                        if (bioOverlay) bioOverlay.classList.add('hidden');
                         if (window.updateGreeting) window.updateGreeting();
                     } else {
-                        authOverlay.classList.add('hidden');
-                        bioOverlay.classList.remove('hidden');
+                        if (authOverlay) authOverlay.classList.add('hidden');
+                        if (bioOverlay) bioOverlay.classList.remove('hidden');
                         if (bioContent) bioContent.classList.remove('hidden');
                         
                         // Hide X button if this is the initial app lock
                         const closeBtn = document.querySelector('#biometricOverlay .modal-close-btn');
                         if (closeBtn && !window.pendingUnlock) closeBtn.style.display = 'none';
-                        const bioKey = `scout-pulse-biometric-enabled-${adminSession.email}`;
-                        const isBiometricEnabled = window.safeStorage.getItem(bioKey) === 'true';
-                        if (isBiometricEnabled) {
-                            // Attempt automatic prompt, but don't show error if blocked by browser (user gesture requirement)
-                            requestBiometricAccess(true); 
-                        }
                     }
                 } else {
                     showAuthStep(1);
@@ -148,15 +153,15 @@ function showAuthStep(step) {
     const authStep2 = document.getElementById('auth-step-2');
     const bioOverlay = document.getElementById('biometricOverlay');
 
-    authOverlay.classList.remove('hidden');
-    bioOverlay.classList.add('hidden');
+    if (authOverlay) authOverlay.classList.remove('hidden');
+    if (bioOverlay) bioOverlay.classList.add('hidden');
 
     if (step === 1) {
-        authStep1.classList.remove('hidden');
-        authStep2.classList.add('hidden');
+        if (authStep1) authStep1.classList.remove('hidden');
+        if (authStep2) authStep2.classList.add('hidden');
     } else {
-        authStep1.classList.add('hidden');
-        authStep2.classList.remove('hidden');
+        if (authStep1) authStep1.classList.add('hidden');
+        if (authStep2) authStep2.classList.remove('hidden');
     }
 }
 
@@ -199,41 +204,42 @@ window.showActionPrompt = function(options) {
     const { title, subtitle, icon, placeholder, type, callback, hideInput, maxLength } = options;
     const modal = document.getElementById('promptModal');
     const input = document.getElementById('prompt-input');
-    const inputGroup = input.closest('.auth-input-group');
+    const inputGroup = input ? input.closest('.auth-input-group') : null;
     const confirmBtn = document.getElementById('prompt-confirm-btn');
     
-    document.getElementById('prompt-title').textContent = title || 'التحقق من الهوية';
-    document.getElementById('prompt-subtitle').textContent = subtitle || '';
-    if (icon) document.getElementById('prompt-icon-box').innerHTML = `<i class="fas ${icon}"></i>`;
+    if (document.getElementById('prompt-title')) document.getElementById('prompt-title').textContent = title || 'التحقق من الهوية';
+    if (document.getElementById('prompt-subtitle')) document.getElementById('prompt-subtitle').textContent = subtitle || '';
+    if (icon && document.getElementById('prompt-icon-box')) document.getElementById('prompt-icon-box').innerHTML = `<i class="fas ${icon}"></i>`;
     
-    input.value = '';
-    input.type = type || 'text';
-    input.placeholder = placeholder || '----';
-    if (maxLength) {
-        input.maxLength = maxLength;
-    } else {
-        input.removeAttribute('maxlength');
-    }
-    
-    if (hideInput) {
-        inputGroup.style.display = 'none';
-    } else {
-        inputGroup.style.display = 'block';
-    }
-    
-    modal.classList.remove('hidden');
-    if (!hideInput) {
-        input.focus();
+    if (input) {
+        input.value = '';
+        input.type = type || 'text';
+        input.placeholder = placeholder || '----';
+        if (maxLength) {
+            input.maxLength = maxLength;
+        } else {
+            input.removeAttribute('maxlength');
+        }
+        
+        if (inputGroup) {
+            if (hideInput) {
+                inputGroup.style.display = 'none';
+            } else {
+                inputGroup.style.display = 'block';
+            }
+        }
+        
         // Allow Enter key to submit
         input.onkeydown = function(e) {
             if (e.key === 'Enter') {
                 e.preventDefault();
-                confirmBtn.click();
+                if (confirmBtn) confirmBtn.click();
             }
         };
-    } else {
-        input.onkeydown = null;
     }
+    
+    if (modal) modal.classList.remove('hidden');
+    if (!hideInput && input) input.focus();
     
     confirmBtn.onclick = async () => {
         const val = input.value.trim();
@@ -530,107 +536,8 @@ window.handleForgotPassword = async function() {
 // Deprecated OTP functions (keeping for compatibility if needed)
 window.sendLoginOtp = () => showToast("تم استبدال نظام الرمز بكلمة المرور", "info");
 
-async function toggleBiometricLock(checkbox) {
-    const adminSession = JSON.parse(window.safeStorage.getItem('admin_session') || '{}');
-    const email = currentUser?.email || adminSession?.email;
-    
-    if (!email) {
-        showToast("خطأ: يرجى تسجيل الدخول أولاً", "error");
-        checkbox.checked = false;
-        return;
-    }
-
-    const bioKey = `scout-pulse-biometric-enabled-${email}`;
-    const bioIdKey = `scout-pulse-biometric-id-${email}`;
-
-    if (checkbox.checked) {
-
-        try {
-            const challenge = new Uint8Array(32);
-            window.crypto.getRandomValues(challenge);
-            
-            const credential = await navigator.credentials.create({
-                publicKey: {
-                    challenge,
-                    rp: { name: "Al-Qasim PC Interface" },
-                    user: {
-                        id: Uint8Array.from((currentUser.id || currentUser.email).replace(/-/g, "").substring(0, 32), c => c.charCodeAt(0)),
-                        name: currentUser.email,
-                        displayName: currentUser.full_name || currentUser.email
-                    },
-                    pubKeyCredParams: [{ alg: -7, type: "public-key" }, { alg: -257, type: "public-key" }],
-                    authenticatorSelection: { 
-                        authenticatorAttachment: "platform",
-                        userVerification: "preferred",
-                        residentKey: "preferred",
-                        requireResidentKey: false
-                    },
-                    timeout: 60000
-                }
-            });
-
-            if (credential) {
-                // Store Credential ID to link it to this specific account
-                const idBase64 = btoa(String.fromCharCode(...new Uint8Array(credential.rawId)));
-                window.safeStorage.setItem(bioIdKey, idBase64);
-                window.safeStorage.setItem(bioKey, 'true');
-                showToast("تم ربط البصمة بحسابك بنجاح", "success");
-            }
-        } catch (err) {
-            console.error(err);
-            showToast("تم إلغاء تفعيل البصمة أو حدث خطأ", "error");
-            checkbox.checked = false;
-        }
-    } else {
-        window.safeStorage.removeItem(bioKey);
-        window.safeStorage.removeItem(bioIdKey);
-        showToast("تم إزالة ربط البصمة", "info");
-    }
-}
-
-async function requestBiometricAccess(isAutoPrompt = false) {
-    const adminSession = JSON.parse(window.safeStorage.getItem('admin_session') || '{}');
-    const email = adminSession?.email;
-    
-    if (!email) return;
-
-    const bioKey = `scout-pulse-biometric-enabled-${email}`;
-    const bioIdKey = `scout-pulse-biometric-id-${email}`;
-    
-    const isBiometricEnabled = window.safeStorage.getItem(bioKey) === 'true';
-    const storedIdBase64 = window.safeStorage.getItem(bioIdKey);
-
-    if (!isBiometricEnabled || !storedIdBase64) {
-        if (!isAutoPrompt) showToast("البصمة غير مفعلة لهذا الحساب", "warning");
-        return;
-    }
-
+window.authenticateBiometrics = async function(isAutoPrompt = false) {
     try {
-        const challenge = new Uint8Array(32);
-        window.crypto.getRandomValues(challenge);
-
-        // Convert stored ID back to Uint8Array
-        const rawId = Uint8Array.from(atob(storedIdBase64), c => c.charCodeAt(0));
-
-        const assertion = await navigator.credentials.get({
-            publicKey: {
-                challenge,
-                timeout: 60000,
-                userVerification: "preferred",
-                mediation: "optional",
-                allowCredentials: [{
-                    id: rawId,
-                    type: "public-key"
-                }]
-            }
-        });
-
-        if (assertion) {
-            // Check if the ID matches what we expect (though allowCredentials does this for us)
-            const returnedIdBase64 = btoa(String.fromCharCode(...new Uint8Array(assertion.rawId)));
-            if (returnedIdBase64 !== storedIdBase64) {
-                throw new Error("بصمة غير مطابقة لهذا الحساب");
-            }
 
             sessionStorage.setItem('scout_pulse_unlocked', 'true');
             document.getElementById('biometricOverlay').classList.add('hidden');
@@ -647,7 +554,6 @@ async function requestBiometricAccess(isAutoPrompt = false) {
                 showToast("تم التحقق، مرحباً بك مجدداً", "success");
                 if (window.updateGreeting) window.updateGreeting();
             }
-        }
     } catch (err) {
         console.error("Biometric Error:", err);
         // Don't show toast if it's an auto-prompt that got blocked or cancelled
@@ -923,6 +829,16 @@ function logout() {
     });
 }
 
+window.toggleBiometricLock = function(el) {
+    const isEnabled = el.checked;
+    window.safeStorage.setItem('scout-pulse-biometric-enabled', isEnabled);
+    showToast(isEnabled ? "تم تفعيل نظام التحقق الحيوي" : "تم إيقاف نظام التحقق الحيوي", "info");
+};
+
+window.requestBiometricAccess = async function() {
+    showToast("تنبيه: سيتم استخدام البصمة في المرة القادمة", "info");
+};
+
 async function addNewAdmin() {
     const nameEl = document.getElementById('new-admin-name');
     const emailEl = document.getElementById('new-admin-email');
@@ -1016,7 +932,10 @@ function showToast(message, type = 'info') {
     
     const icon = type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : type === 'warning' ? 'exclamation-triangle' : 'info-circle';
     
-    toast.innerHTML = `<i class="fas fa-${icon}"></i> <span>${message}</span>`;
+    // Clean message from any emojis
+    const cleanMessage = message.replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F900}-\u{1F9FF}\u{1F3FB}-\u{1F3FF}\u{1F1E6}-\u{1F1FF}]/gu, '');
+
+    toast.innerHTML = `<i class="fas fa-${icon}"></i> <span>${cleanMessage.trim()}</span>`;
     toast.className = `copy-toast active ${type}`;
     
     // Clear any existing timeout to prevent flickering

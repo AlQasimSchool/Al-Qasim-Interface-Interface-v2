@@ -386,7 +386,7 @@ export const templates = {
     `,
 
     /* ===================== الطلاب ===================== */
-    students: (studentsList = []) => {
+    students: (studentsList = [], guestsList = []) => {
         const isUnlocked = state.isStudentsUnlocked;
         const rows = studentsList.map(s => `
             <tr class="student-row" data-id="${s.id}" data-name="${s.name}">
@@ -401,10 +401,42 @@ export const templates = {
                         <span>${s.name}</span>
                     </div>
                 </td>
-                <td class="student-sensitive"><span class="${isUnlocked ? '' : 'blurred'}">${isUnlocked ? s.id : '********'}</span></td>
-                <td class="student-sensitive"><span class="${isUnlocked ? '' : 'blurred'}">${isUnlocked ? s.nationality : '********'}</span></td>
-                <td class="student-sensitive"><span class="${isUnlocked ? '' : 'blurred'}">${isUnlocked ? s.section : '********'}</span></td>
-                <td class="student-sensitive"><span class="${isUnlocked ? '' : 'blurred'}">${isUnlocked ? s.phone : '********'}</span></td>
+                <td class="student-sensitive"><span class="${isUnlocked ? '' : 'blurred'}" style="${isUnlocked ? '' : 'cursor:pointer;'}" onclick="${isUnlocked ? '' : 'window.openPasswordPopup()'}">${isUnlocked ? s.id : '********'}</span></td>
+                <td class="student-sensitive"><span class="${isUnlocked ? '' : 'blurred'}" style="${isUnlocked ? '' : 'cursor:pointer;'}" onclick="${isUnlocked ? '' : 'window.openPasswordPopup()'}">${isUnlocked ? s.nationality : '********'}</span></td>
+                <td class="student-sensitive"><span class="${isUnlocked ? '' : 'blurred'}" style="${isUnlocked ? '' : 'cursor:pointer;'}" onclick="${isUnlocked ? '' : 'window.openPasswordPopup()'}">${isUnlocked ? s.section : '********'}</span></td>
+                <td class="student-sensitive"><span class="${isUnlocked ? '' : 'blurred'}" style="${isUnlocked ? '' : 'cursor:pointer;'}" onclick="${isUnlocked ? '' : 'window.openPasswordPopup()'}">${isUnlocked ? s.phone : '********'}</span></td>
+                <td style="text-align: center; display: flex; gap: 5px; justify-content: center; align-items: center;">
+                    <button class="toolbar-btn" style="padding: 5px 10px; border-radius: 8px; background: rgba(99, 102, 241, 0.1); color: var(--primary);" title="نقل إلى الأعضاء الخارجين" onclick="window.demoteScout('${s.id}')">
+                        <i class="fas fa-user-minus"></i>
+                    </button>
+                    <button class="toolbar-btn close" style="padding: 5px 10px; border-radius: 8px;" title="حذف الطالب" onclick="window.deleteScout('${s.id}')">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+
+        const guestRows = guestsList.map(g => `
+            <tr class="guest-row" data-id="${g.id}">
+                <td>
+                    <label class="custom-checkbox">
+                        <input type="checkbox" class="student-checkbox" data-id="${g.id}">
+                        <span class="checkmark"></span>
+                    </label>
+                </td>
+                <td class="student-name"><span>${g.name}</span></td>
+                <td class="student-sensitive"><span class="${isUnlocked ? '' : 'blurred'}" style="${isUnlocked ? '' : 'cursor:pointer;'}" onclick="${isUnlocked ? '' : 'window.openPasswordPopup()'}">${isUnlocked ? g.id : '********'}</span></td>
+                <td class="student-sensitive"><span class="${isUnlocked ? '' : 'blurred'}" style="${isUnlocked ? '' : 'cursor:pointer;'}" onclick="${isUnlocked ? '' : 'window.openPasswordPopup()'}">${isUnlocked ? (g.nationality || '-') : '********'}</span></td>
+                <td><span>${g.rank || '-'}</span></td>
+                <td class="student-sensitive"><span class="${isUnlocked ? '' : 'blurred'}" style="${isUnlocked ? '' : 'cursor:pointer;'}" onclick="${isUnlocked ? '' : 'window.openPasswordPopup()'}">${isUnlocked ? (g.phone || '-') : '********'}</span></td>
+                <td style="text-align: center; display: flex; gap: 5px; justify-content: center; align-items: center;">
+                    <button class="toolbar-btn" style="padding: 5px 10px; border-radius: 8px; background: rgba(99, 102, 241, 0.1); color: var(--primary);" title="نقل إلى كشاف في الفرقة" onclick="window.promoteGuest('${g.id}')">
+                        <i class="fas fa-user-plus"></i>
+                    </button>
+                    <button class="toolbar-btn close" style="padding: 5px 10px; border-radius: 8px;" title="حذف" onclick="window.deleteGuest('${g.id}')">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
             </tr>
         `).join('');
 
@@ -471,10 +503,41 @@ export const templates = {
                                 <th>الجنسية</th>
                                 <th>الشعبة</th>
                                 <th>رقم الجوال</th>
+                                <th style="text-align: center;">إجراءات</th>
                             </tr>
                         </thead>
                         <tbody id="students-tbody">
                             ${rows}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- External Members (Guests) Section -->
+                <div style="margin-top: 60px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <h2 style="font-size: 1.5rem; font-weight: 900; color: white;"><i class="fas fa-user-plus" style="margin-left: 10px; color: var(--primary);"></i>أعضاء من خارج الفرقة (استثناء)</h2>
+                        <p style="opacity: 0.6; font-size: 0.9rem;">أشخاص محتاجين معلوماتهم بشكل منفصل عن سجل الطلاب الأساسي.</p>
+                    </div>
+                    <button class="btn-premium-save" onclick="window.openAddGuestModal()" style="width: auto; padding: 8px 16px; font-size: 0.85rem; border-radius: 10px;">
+                        <i class="fas fa-plus"></i> إضافة شخص جديد
+                    </button>
+                </div>
+
+                <div class="students-table-wrapper glass-card">
+                    <table class="students-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 40px;"></th>
+                                <th>الاسم</th>
+                                <th>السجل</th>
+                                <th>الجنسية</th>
+                                <th>الرتبة</th>
+                                <th>رقم الجوال</th>
+                                <th style="width: 80px;">إجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody id="guests-tbody">
+                            ${guestRows.length > 0 ? guestRows : '<tr><td colspan="6" style="text-align: center; padding: 40px; opacity: 0.5;">لا يوجد أشخاص مضافون حالياً</td></tr>'}
                         </tbody>
                     </table>
                 </div>

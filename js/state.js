@@ -11,7 +11,8 @@ export const state = {
     folderStack: [], // To handle "Back" logic
     currentFolderId: null,
     isStudentsUnlocked: false,
-    studentsCache: null
+    studentsCache: null,
+    guestsCache: null
 };
 
 // Globalize for non-module scripts like auth-unified

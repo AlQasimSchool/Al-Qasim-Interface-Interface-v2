@@ -74,37 +74,38 @@ function openDatePicker() {
     }
 }
 
-function init() {
-    // التحقق من الجلسة السابقة
-    const session = window.safeStorage.getItem('admin_session');
-    const rememberedEmail = window.safeStorage.getItem('remembered_email');
-    const rememberedId = window.safeStorage.getItem('remembered_id');
+async function checkSession() {
+    const authOverlay = document.getElementById('authOverlay');
+    const bioOverlay = document.getElementById('biometricOverlay');
+    const authLoading = document.getElementById('auth-loading-state');
+    const bioLoading = document.getElementById('bio-loading-state');
+    const bioContent = document.getElementById('bio-content-area');
+    const authStep1 = document.getElementById('auth-step-1');
 
-    if (session) {
-        currentUser = JSON.parse(session);
-        document.getElementById('authOverlay').classList.add('hidden');
-        document.getElementById('admin-management-section').classList.remove('hidden');
-        updateGreeting();
-        
-        // تحديث بيانات المستخدم من القاعدة للتأكد من الاسم الجديد
-        _supabase.from('admins').select('*').eq('email', currentUser.email).single().then(({data}) => {
-            if(data) {
-                currentUser = data;
-                window.safeStorage.setItem('admin_session', JSON.stringify(data));
-                updateGreeting();
+    if (authLoading) authLoading.classList.remove('hidden');
+    if (bioLoading) bioLoading.classList.remove('hidden');
+
+    if (window.safeStorage.getItem('scout-pulse-admin')) {
+        authOverlay.classList.add('hidden');
+        // التحقق من الجلسة الموحدة
+        const session = window.safeStorage.getItem('scout-pulse-admin');
+        if (session) {
+            currentUser = JSON.parse(session);
+            if (document.getElementById('admin-management-section')) {
+                document.getElementById('admin-management-section').classList.remove('hidden');
             }
-        });
-    } else {
-        document.getElementById('authOverlay').classList.remove('hidden');
-        
-        // تعبئة البريد تلقائياً إذا كان محفوظاً
-        if (rememberedEmail) {
-            document.getElementById('login-email').value = rememberedEmail;
-            document.getElementById('sendCodeBtn').querySelector('span').textContent = "إرسال رمز الدخول السريع";
+            updateGreeting();
         }
-
-        checkAndProvisionFirstAdmin();
+    } else {
+        authOverlay.classList.remove('hidden');
     }
+
+    if (authLoading) authLoading.classList.add('hidden');
+    if (bioLoading) bioLoading.classList.add('hidden');
+}
+
+function init() {
+    checkSession();
 
     // إظهار لوحة التحكم فوراً عند الفتح
     showPage('dashboard');
@@ -151,20 +152,7 @@ function init() {
         }
     });
 
-    // تهيئة القفل بالبصمة إذا كان مفعلاً لهذا الحساب
-    if (currentUser) {
-        const bioKey = `scout-pulse-biometric-enabled-${currentUser.email}`;
-        const isBiometricEnabled = window.safeStorage.getItem(bioKey) === 'true';
-        if (isBiometricEnabled) {
-            document.getElementById('biometricOverlay').classList.remove('hidden');
-            const bioToggle = document.getElementById('setting-biometric');
-            if (bioToggle) bioToggle.checked = true;
-            // محاولة الفتح التلقائي عند التحميل
-            setTimeout(() => {
-                if (window.requestBiometricAccess) window.requestBiometricAccess(true);
-            }, 1000);
-        }
-    }
+    // Biometric initialization removed as requested.
 
     const urlParams = new URLSearchParams(window.location.search);
     const scanId = urlParams.get('scanId');
@@ -457,14 +445,9 @@ function updateCard(idPrefix, scout) {
     const img = document.getElementById(`${idPrefix}-photo`);
     const icon = img.nextElementSibling;
     
-    if(scout.photo && scout.photo.startsWith('http')) {
-        img.src = scout.photo;
-        img.classList.remove('hidden');
-        if(icon) icon.classList.add('hidden');
-    } else {
-        img.classList.add('hidden');
-        if(icon) icon.classList.remove('hidden');
-    }
+    img.src = scout.photo || `https://ui-avatars.com/api/?background=6366f1&color=fff&name=${encodeURIComponent(scout.name)}`;
+    img.classList.remove('hidden');
+    if(icon) icon.classList.add('hidden');
 }
 
 
@@ -479,14 +462,10 @@ function updateDirectory() {
         card.onclick = () => openProfile(s.id);
         
         // Circular Avatar Logic
-        const avatarHtml = (s.photo && s.photo.length > 100) 
-            ? `<img src="${s.photo}" class="scout-avatar-img">`
-            : `<div class="w-full h-full flex items-center justify-center bg-indigo-500/10 text-indigo-400"><i data-lucide="user" class="w-5 h-5"></i></div>`;
-
         card.innerHTML = `
             <div class="flex items-center gap-4">
                 <div class="scout-avatar-container">
-                    ${avatarHtml}
+                    <img src="${s.photo || `https://ui-avatars.com/api/?background=6366f1&color=fff&name=${encodeURIComponent(s.name)}`}" class="scout-avatar-img">
                 </div>
                 <div class="overflow-hidden flex-1">
                     <h3 class="font-bold text-white text-sm group-hover:text-indigo-400 transition-colors">${getShortName(s.name)}</h3>
@@ -526,16 +505,11 @@ function openProfile(id) {
     const rate = workingDaysPassed > 0 ? Math.round((attendanceCount / workingDaysPassed) * 100) : 0;
 
     const profileContent = document.getElementById('profilePageContent');
-    // Image Fallback for Modal
-    const photoHtml = (s.photo && s.photo.length > 100) 
-        ? `<img src="${s.photo}" class="w-full h-full object-cover">`
-        : `<div class="w-full h-full flex items-center justify-center bg-indigo-500/10 text-indigo-400"><i data-lucide="user" class="w-12 h-12"></i></div>`;
-
     profileContent.innerHTML = `
         <div class="glass-card p-6 space-y-6">
             <div class="flex flex-col items-center text-center gap-4">
                 <div class="w-24 h-24 rounded-full overflow-hidden border-2 border-indigo-500 shadow-2xl bg-slate-900">
-                    ${photoHtml}
+                    <img src="${s.photo || `https://ui-avatars.com/api/?background=6366f1&color=fff&name=${encodeURIComponent(s.name)}`}" class="w-full h-full object-cover">
                 </div>
                 <div class="space-y-1">
                     <h2 class="text-2xl font-bold">${s.name}</h2>
@@ -716,9 +690,16 @@ async function toggleScanner(state) {
                 };
             } catch(err) { 
                 console.error(err);
-                showToast("❌ فشل تشغيل القارئ: " + err.message, "error");
+                if (err.name === 'NotAllowedError') {
+                    showToast("⚠️ يرجى منح إذن الوصول للـ NFC", "warning");
+                } else {
+                    showToast("❌ فشل تشغيل القارئ: " + err.message, "error");
+                }
             }
         } else {
+            if (window.location.protocol !== 'https:' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+                showToast("⚠️ الـ NFC يتطلب HTTPS للعمل على الجوال", "warning");
+            }
             console.log("Web NFC API not available — using keyboard wedge for USB NFC reader.");
         }
     }
@@ -795,16 +776,23 @@ async function clearAnyNfcCard() {
         try {
             abortController = new AbortController();
             const ndef = new NDEFReader();
-            await ndef.write("", { signal: abortController.signal });
+            await ndef.scan({ signal: abortController.signal });
             
-            showToast("✅ تم مسح البطاقة بنجاح", "success");
-            document.getElementById('writeStatus').classList.add('hidden');
-            document.getElementById('writeSuccess').classList.remove('hidden');
-            setTimeout(stopProgramming, 2000);
+            ndef.onreading = async (event) => {
+                const uid = event.serialNumber;
+                
+                // First, try to wipe the physical tag records (optional but clean)
+                try {
+                    await ndef.write("", { signal: abortController.signal });
+                } catch (e) { console.warn("Could not wipe physical tag records, proceeding with database unlinking."); }
+                
+                // Second, remove from DB
+                await unlinkCard(uid);
+            };
         } catch (error) {
             console.error(error);
             if (error.name !== 'AbortError') {
-                showToast("❌ فشل مسح البطاقة: " + error.message, "error");
+                showToast("❌ فشل تشغيل الحساس: " + error.message, "error");
             }
             stopProgramming();
         }
@@ -846,9 +834,9 @@ async function unlinkCard(cardUID) {
                 .eq('id', scout.id);
             
             scout.nfc_uid = null;
-            showToast(`✅ تم إزالة ربط البطاقة من ${scout.name}`, "success");
+            showToast(`تم إزالة ربط البطاقة من ${scout.name}`, "success");
         } else {
-            showToast("⚠️ هذه البطاقة غير مربوطة بأي كشاف", "info");
+            showToast("هذه البطاقة غير مربوطة بأي كشاف", "info");
         }
         
         document.getElementById('writeStatus').classList.add('hidden');
@@ -859,7 +847,7 @@ async function unlinkCard(cardUID) {
         setTimeout(stopProgramming, 2000);
     } catch (err) {
         console.error("Unlink Error:", err);
-        showToast("❌ فشل إزالة الربط: " + err.message, "error");
+        showToast("فشل إزالة الربط: " + err.message, "error");
         stopProgramming();
     }
 }
@@ -896,19 +884,43 @@ async function startProgramming(scoutId) {
         try {
             abortController = new AbortController();
             const ndef = new NDEFReader();
-            await ndef.write({
-                records: [{ recordType: "text", data: String(scoutId) }]
-            }, { signal: abortController.signal });
+            await ndef.scan({ signal: abortController.signal });
             
-            document.getElementById('writeStatus').classList.add('hidden');
-            document.getElementById('writeSuccess').classList.remove('hidden');
-            if(window.safeStorage.getItem('scout-pulse-sound') !== 'false') playBeep();
-            
-            setTimeout(stopProgramming, 3000);
+            ndef.onreading = async (event) => {
+                const uid = event.serialNumber;
+                
+                // SECURITY CHECK: Is this card already assigned to someone else?
+                const existingScout = scouts.find(s => s.nfc_uid === uid);
+                if (existingScout && String(existingScout.id).trim() !== String(scoutId).trim()) {
+                    showToast(`هذه البطاقة مبرمجة مسبقاً لـ (${existingScout.name})! قم بتهيئة البطاقة أولاً`, "error");
+                    stopProgramming();
+                    return;
+                }
+
+                try {
+                    await ndef.write({
+                        records: [
+                            { recordType: "text", data: String(scoutId) },
+                            { recordType: "text", data: scout.name }
+                        ]
+                    }, { signal: abortController.signal });
+
+                    document.getElementById('writeStatus').classList.add('hidden');
+                    document.getElementById('writeSuccess').classList.remove('hidden');
+                    if(window.safeStorage.getItem('scout-pulse-sound') !== 'false') playBeep();
+                    
+                    // Update DB and local state
+                    linkCardToScout(scoutId, uid, scout.name);
+                    setTimeout(stopProgramming, 2500);
+                } catch (err) {
+                    console.error("Write failed:", err);
+                    showToast("فشل الكتابة على البطاقة", "error");
+                }
+            };
         } catch (error) {
-            console.error("NFC Write Error:", error);
+            console.error("NFC Setup Error:", error);
             if (error.name !== 'AbortError') {
-                showToast("❌ فشلت عملية البرمجة: " + error.message, "error");
+                showToast("❌ فشل تشغيل الحساس: " + error.message, "error");
             }
             stopProgramming();
         }
@@ -1005,8 +1017,11 @@ function setupKeyboardEmulator() {
 
         if(e.key === 'Enter') {
             if(keyboardBuffer.length >= 4) {
-                // We got a full scan! Auto-process it even if isScanning is false.
-                handleScan(keyboardBuffer);
+                // We got a full scan! 
+                // CRITICAL: Only process as attendance if NOT in tools mode
+                if (!isProgramming) {
+                    handleScan(keyboardBuffer);
+                }
             }
             keyboardBuffer = "";
         } else if(e.key.length === 1 && /^\d$/.test(e.key)) {
@@ -1020,27 +1035,22 @@ function setupKeyboardEmulator() {
 let recentScans = [];
 
 async function handleScan(id) {
-    
-    // إذا كان المعرف عبارة عن رابط (بسبب الحل الجذري)، نستخرج الرقم منه
     let processedId = id;
     if (String(id).includes('scanId=')) {
         try {
             const url = new URL(id);
             processedId = url.searchParams.get('scanId');
         } catch(e) {
-            // إذا فشل التحليل كرابط، نحاول استخراجها يدوياً
             processedId = id.split('scanId=')[1];
         }
     }
     
-    // البحث عن الكشاف باستخدام المعرف المعالج (أو عبر nfc_uid)
     const scout = scouts.find(s => 
         String(s.id).trim() === String(processedId).trim() || 
         (s.nfc_uid && String(s.nfc_uid).trim() === String(processedId).trim())
     );
     const res = document.getElementById('scanResult');
-    if (res) res.classList.remove('hidden', 'bg-emerald-500', 'bg-rose-500');
-
+    
     if(scout) {
         const actualScoutId = scout.id;
         try {
@@ -1048,7 +1058,7 @@ async function handleScan(id) {
             const todayISO = now.toISOString().split('T')[0];
             const todayAr = now.toLocaleDateString('ar-EG');
             
-            // التحقق من الحضور المسبق
+            // Check existing
             const { data: existing } = await _supabase
                 .from('attendance')
                 .select('*')
@@ -1056,20 +1066,13 @@ async function handleScan(id) {
                 .filter('created_at', 'gte', todayISO + 'T00:00:00Z');
 
             if(existing && existing.length > 0) {
-                if (res) {
-                    res.textContent = `⚠️ ${scout.name} محضر بالفعل!`;
-                    res.classList.add('bg-rose-500');
-                } else {
-                    showToast(`⚠️ ${scout.name} محضر بالفعل!`, "warning");
-                }
+                showToast(`تم تحضير ${scout.name} مسبقاً`, "warning");
             } else {
-                // تسجيل الحضور بالصيغة العالمية لضمان عمل التقارير
                 await _supabase.from('attendance').insert({
                     scout_id: actualScoutId,
-                    date: todayAr // نحتفظ بالعربي للعرض فقط
+                    date: todayAr
                 });
 
-                // إضافة للسجل المحلي فوراً لتحسين الاستجابة السريعة
                 attendance.unshift({
                     studentId: actualScoutId,
                     time: new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }),
@@ -1077,35 +1080,54 @@ async function handleScan(id) {
                     isoDate: todayISO
                 });
 
+                // Show Popup
                 if (res) {
-                    res.textContent = `✅ تم تحضير: ${scout.name}`;
-                    res.classList.add('bg-emerald-500');
+                    const nameEl = document.getElementById('scan-scout-name');
+                    const patrolEl = document.getElementById('scan-scout-patrol');
+                    const photoEl = document.getElementById('scan-scout-photo');
+                    
+                    if (nameEl) nameEl.textContent = scout.name;
+                    if (patrolEl) patrolEl.textContent = scout.patrol || scout.section || 'كشاف';
+                    
+                    // Better photo fallback using UI Avatars
+                    if (photoEl) {
+                        photoEl.src = scout.photo || `https://ui-avatars.com/api/?background=6366f1&color=fff&name=${encodeURIComponent(scout.name)}`;
+                    }
+                    
+                    res.classList.remove('hidden');
+                    res.firstElementChild.classList.remove('animate-popup-out');
+                    res.firstElementChild.classList.add('animate-popup-in');
+                    
+                    if(window.safeStorage.getItem('scout-pulse-sound') !== 'false') playBeep();
+
+                    setTimeout(() => {
+                        res.firstElementChild.classList.replace('animate-popup-in', 'animate-popup-out');
+                        setTimeout(() => res.classList.add('hidden'), 500);
+                    }, 3500);
                 }
-                showToast(`✅ تم تحضير: ${scout.name}`, "success");
-                if(window.safeStorage.getItem('scout-pulse-sound') !== 'false') playBeep();
                 
-                // Add to recent scans
+                showToast(`تم تحضير: ${scout.name}`, "success");
+                
                 recentScans.unshift({
                     name: scout.name,
                     time: new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit', hour12: true }),
-                    photo: scout.photo
+                    photo: scout.photo,
+                    patrol: scout.patrol || scout.section
                 });
-                if(recentScans.length > 5) recentScans.pop();
+                if(recentScans.length > 10) recentScans.pop();
                 
-                updateDashboard(); // تحديث الأرقام والواجهة الرئيسية
-                updateScanCounts(); // تحديث العدادات في واجهة المسح
-                fetchData(); // مزامنة نهائية مع القاعدة
+                updateDashboard();
+                updateScanCounts();
+                updateScansListUI(); // Trigger local UI update for recent scans
+                fetchData();
             }
-        } catch (e) { console.error(e); }
-    } else {
-        if (res) {
-            res.textContent = "❌ كشاف غير معروف!";
-            res.classList.add('bg-rose-500');
+        } catch (e) { 
+            console.error(e); 
+            showToast("❌ خطأ أثناء معالجة التحضير: " + e.message, "error");
         }
-        showToast("❌ هذه البطاقة غير مسجلة في النظام", "error");
+    } else {
+        showToast("هذه البطاقة غير مسجلة في النظام", "error");
     }
-    
-    setTimeout(() => { if(isScanning && res) res.classList.add('hidden'); }, 3000);
 }
 
 function updateScansList(logs, period) {
@@ -1115,55 +1137,73 @@ function updateScansList(logs, period) {
     if (periodLabel) periodLabel.textContent = period;
 
     if (!logs || logs.length === 0) {
-        list.innerHTML = `<div class="text-center py-6 text-slate-500 italic text-sm">لا توجد عمليات تحضير في ${period}</div>`;
+        list.innerHTML = `<div class="flex flex-col items-center justify-center py-10 opacity-40"><i data-lucide="history" class="w-10 h-10 mb-2"></i><p class="text-sm">لا توجد سجلات حالياً</p></div>`;
+        if (window.lucide) window.lucide.createIcons();
         return;
     }
     
-    // عرض آخر 10 عمليات في هذه الفترة
+    // Show last 10 scans
     const displayLogs = logs.slice(0, 10);
     
-    list.innerHTML = displayLogs.map(log => {
-        const s = scouts.find(x => x.id === log.studentId);
+    let html = '<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">';
+    html += displayLogs.map(log => {
+        const s = scouts.find(x => String(x.id).trim() === String(log.studentId).trim());
         if (!s) return '';
         
         return `
-            <div class="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5 animate-slide-up">
-                <div class="flex items-center gap-4">
-                    <div class="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center overflow-hidden border-2 border-indigo-500/30">
-                        ${s.photo && s.photo.startsWith('http') 
-                            ? `<img src="${s.photo}" class="w-full h-full object-cover">`
-                            : `<i data-lucide="user" class="w-6 h-6 text-slate-500"></i>`}
-                    </div>
-                    <div>
-                        <p class="font-bold">${s.name}</p>
-                        <p class="text-[10px] text-indigo-400 font-bold uppercase">${log.date}</p>
-                    </div>
+            <div class="glass-card p-4 flex items-center gap-4 border-emerald-500/10 bg-emerald-500/5 animate-in">
+                <div class="w-12 h-12 rounded-full overflow-hidden border border-emerald-500/30 flex-shrink-0">
+                    <img src="${s.photo || `https://ui-avatars.com/api/?background=6366f1&color=fff&name=${encodeURIComponent(s.name)}`}" class="w-full h-full object-cover">
                 </div>
-                <div class="text-right">
-                    <p class="text-xs font-bold text-slate-400">${log.time}</p>
+                <div class="flex-1 min-w-0 text-right">
+                    <p class="font-bold text-white truncate">${s.name}</p>
+                    <p class="text-[10px] text-slate-500">${s.patrol || s.section || 'كشاف'} • ${log.time}</p>
+                </div>
+                <div class="text-emerald-400">
+                    <i data-lucide="check-circle-2" class="w-5 h-5"></i>
                 </div>
             </div>
         `;
     }).join('');
+    html += '</div>';
+    
+    list.innerHTML = html;
+    if (window.lucide) window.lucide.createIcons();
+}
+
+
+function updateScansListUI() {
+    updateScansList(attendance, "متصل الآن");
 }
 
 function showScanResult(scout) {
     const res = document.getElementById('scanResult');
-    const photoContainer = document.getElementById('resultPhotoContainer') || document.getElementById('resultPhoto');
+    if (!res) return;
+
+    const nameEl = document.getElementById('scan-scout-name');
+    const patrolEl = document.getElementById('scan-scout-patrol');
+    const photoEl = document.getElementById('scan-scout-photo');
     
-    document.getElementById('resultName').textContent = scout.name;
-    document.getElementById('resultRank').textContent = scout.rank;
+    if (nameEl) nameEl.textContent = scout.name;
+    if (patrolEl) patrolEl.textContent = scout.patrol || scout.section || 'كشاف';
     
-    if (scout.photo && scout.photo.startsWith('http')) {
-        photoContainer.innerHTML = `<img src="${scout.photo}" class="w-full h-full object-cover rounded-full border-4 border-indigo-500 shadow-xl">`;
-    } else {
-        photoContainer.innerHTML = `<div class="w-32 h-32 rounded-full mx-auto mb-4 border-4 border-indigo-500 shadow-xl bg-indigo-500/20 flex items-center justify-center text-indigo-400"><i data-lucide="user" class="w-16 h-16"></i></div>`;
+    // Better photo fallback
+    if (photoEl) {
+        photoEl.src = scout.photo || 'https://ui-avatars.com/api/?background=6366f1&color=fff&name=' + encodeURIComponent(scout.name);
     }
     
     res.classList.remove('hidden');
-    lucide.createIcons();
-    setTimeout(() => { if(isScanning) res.classList.add('hidden'); }, 3000);
+    res.firstElementChild.classList.remove('animate-popup-out');
+    res.firstElementChild.classList.add('animate-popup-in');
+    
+    if(window.safeStorage.getItem('scout-pulse-sound') !== 'false') playBeep();
+
+    setTimeout(() => {
+        res.firstElementChild.classList.replace('animate-popup-in', 'animate-popup-out');
+        setTimeout(() => res.classList.add('hidden'), 500);
+    }, 2500);
 }
+
 
 function setupSearch() {
     document.getElementById('scoutSearch').addEventListener('input', e => {
@@ -1186,14 +1226,14 @@ async function addNewScout() {
     const photoFile = photoInput.files ? photoInput.files[0] : null;
 
     if (!name || !id) {
-        showToast("⚠️ يرجى إدخال الاسم ورقم الهوية", "error");
+        showToast("يرجى إدخال الاسم ورقم الهوية", "error");
         return;
     }
 
     try {
         let photoUrl = "";
         if (photoFile) {
-            showToast("⏳ جاري رفع الصورة...", "info");
+            showToast("جاري رفع الصورة...", "info");
             photoUrl = await uploadFile(photoFile);
         }
 
@@ -1212,7 +1252,7 @@ async function addNewScout() {
 
         if(error) throw error;
 
-        showToast("✅ تم إضافة الكشاف بنجاح!", "success");
+        showToast("تم إضافة الكشاف بنجاح!", "success");
         document.getElementById('addScoutForm').reset();
         fetchData(); 
     } catch(err) { 
@@ -1497,29 +1537,23 @@ function executePDFExport(period, periodName, mode = 'download') {
 }
 
 async function confirmResetAttendance() {
-    const confirmed = await showConfirm(
-        "تصفير السجلات", 
-        "هل أنت متأكد من حذف جميع سجلات الحضور؟ هذا الإجراء لا يمكن التراجع عنه!", 
-        true
-    );
+    window.verifyAdminAction(async () => {
+        try {
+            // تصفير الحضور من Supabase
+            const { error } = await _supabase
+                .from('attendance')
+                .delete()
+                .neq('id', 0); // حذف كل الأسطر التي معرفها ليس 0 (أي الكل)
 
-    if (confirmed) {
-            try {
-                // تصفير الحضور من Supabase
-                const { error } = await _supabase
-                    .from('attendance')
-                    .delete()
-                    .neq('id', 0); // حذف كل الأسطر التي معرفها ليس 0 (أي الكل)
+            if(error) throw error;
 
-                if(error) throw error;
-
-                showToast("✅ تم تصفير البيانات بنجاح.", "success");
-                fetchData();
-            } catch(err) { 
-                console.error(err);
-                showToast("❌ فشل تصفير البيانات.", "error");
+            showToast("✅ تم تصفير البيانات بنجاح.", "success");
+            fetchData();
+        } catch(err) { 
+            console.error(err);
+            showToast("❌ فشل تصفير البيانات.", "error");
         }
-    }
+    });
 }
 
 // Settings Persistence
@@ -1641,7 +1675,7 @@ async function requestAuthCode() {
             throw authError;
         }
 
-        showToast("✅ تم إرسال رمز التحقق لبريدك الإلكتروني", "success");
+        showToast("تم إرسال رمز التحقق لبريدك الإلكتروني", "success");
         tempLoginData = admin;
         
         document.getElementById('auth-step-1').classList.add('hidden');
@@ -1651,7 +1685,7 @@ async function requestAuthCode() {
         startResendTimer();
     } catch (err) {
         console.error("Auth Error:", err);
-        showToast("❌ فشل إرسال الرمز: " + err.message, "error");
+        showToast("فشل إرسال الرمز: " + err.message, "error");
     } finally {
         btn.disabled = false;
         btn.innerHTML = '<span>إرسال رمز التحقق (Email)</span>';
@@ -1907,11 +1941,12 @@ async function finalizeAbsentees(date) {
         // 1. جلب الكشافة الذين حضروا اليوم
         const { data: attendedData, error: attError } = await _supabase
             .from('attendance')
-            .select('studentId')
-            .eq('isoDate', date);
+            .select('scout_id')
+            .filter('created_at', 'gte', date + 'T00:00:00Z')
+            .filter('created_at', 'lt', date + 'T23:59:59Z');
         
         if (attError) throw attError;
-        const attendedSet = new Set(attendedData.map(a => String(a.studentId)));
+        const attendedSet = new Set(attendedData.map(a => String(a.scout_id)));
 
         // 2. تحديد الغائبين
         const absentees = scouts.filter(s => !attendedSet.has(String(s.id)));
@@ -1943,6 +1978,70 @@ setInterval(checkAndFinalizeAttendance, 60000);
 // وأيضاً عند بدء التطبيق
 setTimeout(checkAndFinalizeAttendance, 5000);
 
+async function startIdentifying() {
+    isProgramming = true;
+    const overlay = document.getElementById('writeOverlay');
+    overlay.classList.remove('hidden');
+    overlay.style.display = 'flex';
+    
+    const title = document.getElementById('writeOverlayTitle');
+    const sub = document.getElementById('writeOverlaySub');
+    if (title) title.textContent = "التعرف على البطاقة";
+    if (sub) sub.innerHTML = `مرر أي بطاقة الآن للتعرف على صاحبها`;
+    
+    document.getElementById('writeTargetName').textContent = "";
+    document.getElementById('writeSuccess').classList.add('hidden');
+    document.getElementById('writeStatus').classList.remove('hidden');
+
+    if ('NDEFReader' in window) {
+        try {
+            abortController = new AbortController();
+            const ndef = new NDEFReader();
+            await ndef.scan({ signal: abortController.signal });
+            
+            ndef.onreading = (event) => {
+                const uid = event.serialNumber;
+                const scout = scouts.find(s => s.nfc_uid === uid);
+                
+                if (scout) {
+                    showScanResult(scout);
+                    stopProgramming();
+                } else {
+                    showToast("هذه البطاقة غير مرتبطة بأي كشاف", "warning");
+                }
+            };
+        } catch (err) {
+            if (err.name !== 'AbortError') showToast("خطأ في تشغيل الحساس", "error");
+            stopProgramming();
+        }
+    } else {
+        // Desktop support via keyboard emulator
+        let idBuffer = '';
+        let idTimer;
+        window._idKeyHandler = function(e) {
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+            if (/^\d$/.test(e.key)) {
+                idBuffer += e.key;
+                clearTimeout(idTimer);
+                idTimer = setTimeout(() => { idBuffer = ''; }, 150);
+            } else if (e.key === 'Enter' && idBuffer.length >= 4) {
+                const uid = idBuffer;
+                idBuffer = '';
+                const scout = scouts.find(s => s.nfc_uid === uid);
+                if (scout) {
+                    showScanResult(scout);
+                    stopProgramming();
+                } else {
+                    showToast("بطاقة غير معروفة", "warning");
+                }
+                document.removeEventListener('keydown', window._idKeyHandler);
+            }
+        };
+        document.addEventListener('keydown', window._idKeyHandler);
+    }
+}
+
+window.startIdentifying = startIdentifying;
 window.updateAttendanceSettings = updateAttendanceSettings;
 window.checkAndFinalizeAttendance = checkAndFinalizeAttendance;
 

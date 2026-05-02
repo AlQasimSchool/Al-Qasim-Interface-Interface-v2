@@ -1,6 +1,6 @@
-import { navigateTo, renderDocuments, renderReports, renderStudents, updateClock, updateSidebarFooter } from './navigation.js';
+import { navigateTo, renderDocuments, renderReports, renderStudents, updateClock, updateSidebarFooter } from './navigation.js?v=15.0';
 import { handleGlobalSearch } from './search.js';
-import { fetchWeather } from './api.js';
+import { fetchWeather } from './api.js?v=15.0';
 import { getWeatherIcon } from './utils.js';
 import { state, saveDocsViewMode } from './state.js';
 import { initCalendar, selectedDay, calDate, calEvents } from './calendar.js';
@@ -96,9 +96,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // Refresh buttons (Simplified & Global)
         if (e.target.closest('#refresh-docs')) renderDocuments(state.currentFolderId);
-        if (e.target.closest('#refresh-videos')) import('./navigation.js').then(m => m.renderMedia());
+        if (e.target.closest('#refresh-videos')) import('./navigation.js?v=15.0').then(m => m.renderMedia());
         if (e.target.closest('#refresh-reports')) { state.reportFilesCache = null; renderReports(); }
-        if (e.target.closest('#refresh-students')) { state.studentsCache = null; renderStudents(); }
+        if (e.target.closest('#refresh-students')) { 
+            state.studentsCache = null; 
+            state.guestsCache = null;
+            renderStudents(); 
+        }
         if (e.target.closest('#refresh-calendar')) { state.calendarEventsCache = null; initCalendar(); }
 
         // Report Card — open PDF viewer
@@ -219,14 +223,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                 document.getElementById('link-url').value = '';
                 document.getElementById('link-desc').value = '';
 
-                import('./navigation.js').then(m => m.navigateTo('links'));
+                import('./navigation.js?v=15.0').then(m => m.navigateTo('links'));
             }
         }
         if (e.target.closest('.del-link')) {
             if (confirm('هل أنت متأكد من حذف هذا الرابط؟')) {
                 deleteCustomLink(e.target.closest('.del-link').dataset.url);
                 // Refresh view
-                import('./navigation.js').then(m => m.navigateTo('links'));
+                import('./navigation.js?v=15.0').then(m => m.navigateTo('links'));
                 // Keep edit mode active visual hack or just let it reset
             }
         }

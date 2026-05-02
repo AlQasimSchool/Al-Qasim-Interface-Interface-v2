@@ -1,5 +1,5 @@
 import { state } from './state.js';
-import { fetchTasksSupabase, saveTaskSupabase, deleteTaskSupabase } from './api.js';
+import { fetchTasksSupabase, saveTaskSupabase, deleteTaskSupabase } from './api.js?v=15.0';
 
 export function getTasks() {
     return state.tasksCache || [];
@@ -203,5 +203,5 @@ window.deleteTaskItem = (id) => {
 };
 
 window.navigateTo = (pageId) => {
-    import('./navigation.js').then(m => m.navigateTo(pageId));
+    import('./navigation.js?v=15.0').then(m => m.navigateTo(pageId));
 };

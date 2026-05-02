@@ -254,3 +254,111 @@ export async function deleteCustomLinkSupabase(id) {
         console.error('Link Delete Error:', err);
     }
 }
+
+// --- Guests (External Members) Supabase ---
+export async function fetchGuestsSupabase() {
+    if (state.guestsCache) return state.guestsCache;
+    if (!window._supabase) {
+        console.error('Supabase client not found');
+        return [];
+    }
+    try {
+        const { data, error } = await window._supabase.from('guests').select('*').order('name');
+        if (error) throw error;
+        state.guestsCache = data || [];
+        return state.guestsCache;
+    } catch (err) {
+        console.error('Guests Fetch Error:', err);
+        return [];
+    }
+}
+
+export async function saveGuestSupabase(guest) {
+    if (!window._supabase) throw new Error('فشل الاتصال بقاعدة البيانات');
+    try {
+        const { error } = await window._supabase.from('guests').upsert([guest]);
+        if (error) throw error;
+        state.guestsCache = null; // Clear cache
+        return true;
+    } catch (err) {
+        console.error('Guest Save Error:', err);
+        throw err;
+    }
+}
+
+export async function deleteGuestSupabase(id) {
+    if (!window._supabase) throw new Error('فشل الاتصال بقاعدة البيانات');
+    try {
+        const { error } = await window._supabase.from('guests').delete().eq('id', id);
+        if (error) throw error;
+        state.guestsCache = null; // Clear cache
+        return true;
+    } catch (err) {
+        console.error('Guest Delete Error:', err);
+        throw err;
+    }
+}
+export async function promoteGuestToScout(guest) {
+    if (!window._supabase) throw new Error('فشل الاتصال بقاعدة البيانات');
+    try {
+        // 1. Insert into scouts table
+        const { error: insertError } = await window._supabase.from('scouts').insert([{
+            id: guest.id,
+            name: guest.name,
+            nationality: guest.nationality || 'سعودي',
+            section: 'عضو جديد', // Default section
+            phone: guest.phone || '-'
+        }]);
+        if (insertError) throw insertError;
+
+        // 2. Delete from guests table
+        const { error: deleteError } = await window._supabase.from('guests').delete().eq('id', guest.id);
+        if (deleteError) throw deleteError;
+
+        state.guestsCache = null; // Clear caches
+        state.studentsCache = null;
+        return true;
+    } catch (err) {
+        console.error('Promotion Error:', err);
+        throw err;
+    }
+}
+
+export async function demoteScoutToGuest(scout, rank) {
+    if (!window._supabase) throw new Error('فشل الاتصال بقاعدة البيانات');
+    try {
+        // 1. Insert into guests table
+        const { error: insertError } = await window._supabase.from('guests').insert([{
+            id: scout.id,
+            name: scout.name,
+            nationality: scout.nationality || 'سعودي',
+            rank: rank || 'زائر',
+            phone: scout.phone || '-'
+        }]);
+        if (insertError) throw insertError;
+
+        // 2. Delete from scouts table
+        const { error: deleteError } = await window._supabase.from('scouts').delete().eq('id', scout.id);
+        if (deleteError) throw deleteError;
+
+        state.guestsCache = null; // Clear caches
+        state.studentsCache = null;
+        return true;
+    } catch (err) {
+        console.error('Demotion Error:', err);
+        throw err;
+    }
+}
+
+export async function deleteScoutSupabase(id) {
+    if (!window._supabase) throw new Error('فشل الاتصال بقاعدة البيانات');
+    try {
+        const { error } = await window._supabase.from('scouts').delete().eq('id', id);
+        if (error) throw error;
+        state.studentsCache = null; // Clear cache
+        return true;
+    } catch (err) {
+        console.error('Scout Delete Error:', err);
+        throw err;
+    }
+}

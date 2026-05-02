@@ -1,8 +1,130 @@
 import { state } from './state.js';
-import { templates, buildFileItem, buildYouTubeVideoCard } from './ui.js?v=2';
-import { fetchDriveFiles, fetchYouTubeVideos, fetchReportFiles, fetchStudentsFromDoc } from './api.js';
+import { templates, buildFileItem, buildYouTubeVideoCard } from './ui.js?v=15.0';
+import { fetchDriveFiles, fetchYouTubeVideos, fetchReportFiles, fetchStudentsFromDoc, fetchGuestsSupabase, saveGuestSupabase, deleteGuestSupabase, promoteGuestToScout, demoteScoutToGuest, deleteScoutSupabase } from './api.js?v=15.0';
 import { getTasks } from './tasks.js';
 import { initCalendar } from './calendar.js';
+
+// --- Global UI Functions (Attached to window for inline onclick handlers) ---
+export const openAddGuestModal = () => {
+    const modal = document.createElement('div');
+    modal.className = 'custom-modal active';
+    modal.innerHTML = `
+        <div class="modal-content animate-in" style="max-width: 500px; border-radius: 28px;">
+            <div class="modal-header">
+                <h3><i class="fas fa-user-plus" style="color:var(--primary); margin-left: 10px;"></i>إضافة شخص (خارج الفرقة)</h3>
+                <i class="fas fa-times close-modal"></i>
+            </div>
+            <div class="modal-body" style="padding-top: 20px;">
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label>الاسم الكامل</label>
+                    <input type="text" id="guest-name" placeholder="أدخل الاسم">
+                </div>
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label>رقم السجل</label>
+                    <input type="text" id="guest-id" placeholder="أدخل رقم السجل">
+                </div>
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label>الجنسية</label>
+                    <input type="text" id="guest-nationality" placeholder="مثال: سعودي">
+                </div>
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label>الرتبة</label>
+                    <input type="text" id="guest-rank" placeholder="مثال: متطوع / زائر">
+                </div>
+                <div class="form-group" style="margin-bottom: 25px;">
+                    <label>رقم الجوال</label>
+                    <input type="text" id="guest-phone" placeholder="05xxxxxxxx">
+                </div>
+                <div class="modal-actions">
+                    <button class="modal-btn cancel close-modal-btn">إلغاء</button>
+                    <button class="modal-btn save" id="confirm-save-guest" style="background:var(--primary)">حفظ البيانات</button>
+                </div>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+
+    const close = () => modal.remove();
+    modal.querySelector('.close-modal').onclick = close;
+    modal.querySelector('.close-modal-btn').onclick = close;
+
+    modal.querySelector('#confirm-save-guest').onclick = async () => {
+        const guest = {
+            name: document.getElementById('guest-name').value.trim(),
+            id: document.getElementById('guest-id').value.trim(),
+            nationality: document.getElementById('guest-nationality').value.trim(),
+            rank: document.getElementById('guest-rank').value.trim(),
+            phone: document.getElementById('guest-phone').value.trim()
+        };
+
+        if (!guest.name || !guest.id) {
+            window.showToast("يرجى ملء الحقول الأساسية (الاسم والسجل)", "error");
+            return;
+        }
+
+        try {
+            await saveGuestSupabase(guest);
+            window.showToast("تم إضافة الشخص بنجاح", "success");
+            close();
+            if (window.renderStudents) window.renderStudents(); // Refresh view
+        } catch (err) {
+            console.error("Save Guest Error Details:", err);
+            window.showToast("فشل الحفظ: " + (err.message || "حدث خطأ غير معروف"), "error");
+        }
+    };
+};
+
+export const deleteGuest = async (id) => {
+    if (!confirm("هل أنت متأكد من حذف هذا السجل؟")) return;
+    try {
+        await deleteGuestSupabase(id);
+        window.showToast("تم الحذف بنجاح", "success");
+        if (window.renderStudents) window.renderStudents(); // Refresh view
+    } catch (err) {
+        window.showToast("فشل الحذف", "error");
+    }
+};
+
+export const promoteGuest = async (id) => {
+    if (!confirm("هل أنت متأكد من نقل هذا العضو إلى الكشافة الأساسيين؟")) return;
+    try {
+        const guest = state.guestsCache.find(g => g.id == id);
+        if (!guest) throw new Error("السجل غير موجود");
+        
+        await promoteGuestToScout(guest);
+        window.showToast("تم نقل العضو إلى قائمة الكشافة بنجاح", "success");
+        if (window.renderStudents) window.renderStudents();
+    } catch (err) {
+        window.showToast("فشل النقل: " + (err.message || "خطأ غير معروف"), "error");
+    }
+};
+
+export const demoteScout = async (id) => {
+    const rank = prompt("أدخل رتبة العضو أو سبب النقل (مثال: قائد، زائر، كشاف سابق):", "زائر");
+    if (rank === null) return; // Cancelled
+    
+    try {
+        const scout = state.studentsCache.find(s => s.id == id);
+        if (!scout) throw new Error("سجل الطالب غير موجود");
+        
+        await demoteScoutToGuest(scout, rank);
+        window.showToast("تم نقل الطالب إلى قائمة الأعضاء الخارجين", "success");
+        if (window.renderStudents) window.renderStudents();
+    } catch (err) {
+        window.showToast("فشل النقل: " + (err.message || "خطأ غير معروف"), "error");
+    }
+};
+
+export const deleteScout = async (id) => {
+    if (!confirm("هل أنت متأكد من حذف هذا الطالب نهائياً من النظام؟")) return;
+    try {
+        await deleteScoutSupabase(id);
+        window.showToast("تم حذف الطالب بنجاح", "success");
+        if (window.renderStudents) window.renderStudents();
+    } catch (err) {
+        window.showToast("فشل الحذف: " + (err.message || "خطأ غير معروف"), "error");
+    }
+};
 
 window.openNewTaskModal = () => {
     const modal = document.createElement('div');
@@ -373,7 +495,6 @@ export async function renderReports() {
 }
 
 export async function renderStudents() {
-    window.renderStudents = renderStudents;
     const container = document.getElementById('page-content');
     if (!container) return;
 
@@ -383,8 +504,11 @@ export async function renderStudents() {
     }
 
     try {
-        const students = await fetchStudentsFromDoc();
-        container.innerHTML = templates.students(students);
+        const [students, guests] = await Promise.all([
+            fetchStudentsFromDoc(),
+            fetchGuestsSupabase()
+        ]);
+        container.innerHTML = templates.students(students, guests);
         
         // Add checkbox selection logic
         const selectAll = document.getElementById('select-all-students');
@@ -393,7 +517,7 @@ export async function renderStudents() {
                 const isChecked = this.checked;
                 const allCheckboxes = document.querySelectorAll('.student-checkbox');
                 allCheckboxes.forEach(cb => {
-                    const row = cb.closest('.student-row');
+                    const row = cb.closest('.student-row') || cb.closest('.guest-row');
                     if (row && row.style.display !== 'none') {
                         cb.checked = isChecked;
                     }
@@ -429,6 +553,7 @@ export function renderTasksBoard() {
     const tasks = getTasks();
     container.innerHTML = templates.tasks_board(tasks);
 }
+
 
 // Global Print Modal Logic
 window.openPrintModal = function(studentsData) {
@@ -497,12 +622,16 @@ window.openPrintModal = function(studentsData) {
 
     modal.querySelector('#start-print-btn').onclick = () => {
         const columns = Array.from(modal.querySelectorAll('.print-options-grid input:checked')).map(i => i.dataset.col);
-        const dataToUse = studentsData || state.studentsCache;
-        if (!dataToUse) {
+        
+        // Combine all caches for searching selected IDs
+        const allData = [...(state.studentsCache || []), ...(state.guestsCache || [])];
+        
+        if (allData.length === 0) {
             showToast('لا توجد بيانات متاحة للطباعة', 'error');
             return;
         }
-        const selectedStudents = dataToUse.filter(s => selectedIds.includes(String(s.id)));
+        
+        const selectedStudents = allData.filter(s => selectedIds.includes(String(s.id)));
         
         const customTitle = modal.querySelector('#print-doc-title').value.trim() || 'كشف بيانات الطلاب';
         generatePrintDoc(selectedStudents, columns, customTitle);
@@ -539,10 +668,11 @@ function generatePrintDoc(students, columns, customTitle) {
                     body { background: white; }
                     #print-section { display: block !important; position: absolute; left: 0; top: 0; width: 100%; }
                     .no-print { display: none !important; }
-                    table { page-break-inside: auto; width: 100%; border-collapse: collapse; }
+                    table { page-break-inside: auto; width: 100%; border-collapse: collapse; margin-bottom: 30px; }
                     tr { page-break-inside: avoid; page-break-after: auto; }
-                    thead { display: table-header-group; } /* Repeats header on every page */
+                    thead { display: table-header-group; }
                     tfoot { display: table-footer-group; }
+                    tbody { widows: 4; orphans: 4; }
                 }
                 .print-table th { background: #f1f5f9 !important; -webkit-print-color-adjust: exact; border: 1px solid #000; padding: 8px 4px; font-weight: bold; font-size: 11px; }
                 .print-table td { border: 1px solid #000; padding: 6px 4px; font-size: 11px; text-align: center; }
@@ -561,7 +691,7 @@ function generatePrintDoc(students, columns, customTitle) {
                 </div>
                 <div style="text-align: left; line-height: 1.4; flex: 1;">
                     <p style="margin: 0; font-size: 11px;">التاريخ: ${new Date().toLocaleDateString('ar-EG')}</p>
-                    <p style="margin: 0; font-size: 11px;">العدد الإجمالي: ${students.length} طالب</p>
+                    <p style="margin: 0; font-size: 11px;">العدد الإجمالي: ${students.length}</p>
                 </div>
             </div>
     `;
@@ -594,14 +724,14 @@ function generatePrintDoc(students, columns, customTitle) {
                 </tbody>
             </table>
 
-            <div style="display: flex; justify-content: space-around; margin-top: 50px; padding: 0 20px; text-align: center; page-break-inside: avoid;">
-                <div style="width: 200px;">
-                    <p style="font-size: 13px; font-weight: bold; margin-bottom: 50px;">قائد الفرقة الكشفية</p>
-                    <div style="border-bottom: 1px solid #000; width: 100%;"></div>
+            <div class="print-signatures" style="display: flex; justify-content: space-around; margin-top: 60px; padding: 0 20px; text-align: center; break-inside: avoid; page-break-inside: avoid; page-break-before: auto;">
+                <div style="width: 250px; display: flex; flex-direction: column; align-items: center;">
+                    <p style="font-size: 14px; font-weight: bold; margin-bottom: 50px;">قائد الفرقة الكشفية</p>
+                    <div style="border-bottom: 1.5px solid #000; width: 100%;"></div>
                 </div>
-                <div style="width: 200px;">
-                    <p style="font-size: 13px; font-weight: bold; margin-bottom: 50px;">مدير المدرسة</p>
-                    <div style="border-bottom: 1px solid #000; width: 100%;"></div>
+                <div style="width: 250px; display: flex; flex-direction: column; align-items: center;">
+                    <p style="font-size: 14px; font-weight: bold; margin-bottom: 50px;">مدير المدرسة</p>
+                    <div style="border-bottom: 1.5px solid #000; width: 100%;"></div>
                 </div>
             </div>
         </div>
@@ -649,23 +779,33 @@ window.clearStudentSelection = function() {
 };
 
 window.copySelectedStudents = function() {
-    const selected = Array.from(document.querySelectorAll('.student-checkbox:checked')).map(cb => {
-        const row = cb.closest('.student-row');
-        return row ? row.dataset.student : null;
+    const selectedCheckboxes = Array.from(document.querySelectorAll('.student-checkbox:checked'));
+    if (selectedCheckboxes.length === 0) {
+        showToast('يرجى اختيار سجلات لنسخها', 'warning');
+        return;
+    }
+
+    const allData = [...(state.studentsCache || []), ...(state.guestsCache || [])];
+    const selectedData = selectedCheckboxes.map(cb => {
+        const id = cb.dataset.id;
+        return allData.find(s => String(s.id) === id);
     }).filter(Boolean);
 
-    if (selected.length === 0) return;
+    if (selectedData.length === 0) return;
 
-    const text = selected.map(s => {
-        const data = JSON.parse(s);
-        return `${data.name}\t${data.id}\t${data.section}\t${data.phone}`;
-    }).join('\n');
-
+    const text = selectedData.map(s => `${s.name}\t${s.id}\t${s.nationality || ''}\t${s.phone || ''}`).join('\n');
     navigator.clipboard.writeText(text).then(() => {
-        if (window.showToast) window.showToast(`تم نسخ بيانات ${selected.length} طالب`, 'success');
+        showToast(`تم نسخ بيانات ${selectedData.length} سجل إلى الحافظة`, 'success');
     });
 };
 
 window.printSelectedStudents = function() {
     if (window.openPrintModal) window.openPrintModal();
 };
+// --- Attach to window for global access ---
+window.openAddGuestModal = openAddGuestModal;
+window.deleteGuest = deleteGuest;
+window.promoteGuest = promoteGuest;
+window.demoteScout = demoteScout;
+window.deleteScout = deleteScout;
+window.renderStudents = renderStudents;

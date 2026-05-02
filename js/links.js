@@ -1,6 +1,6 @@
 import { state } from './state.js';
-import { navigateTo } from './navigation.js';
-import { fetchCustomLinksSupabase, saveCustomLinkSupabase, deleteCustomLinkSupabase } from './api.js';
+import { navigateTo } from './navigation.js?v=15.0';
+import { fetchCustomLinksSupabase, saveCustomLinkSupabase, deleteCustomLinkSupabase } from './api.js?v=15.0';
 
 export async function loadCustomLinks() {
     state.customLinks = await fetchCustomLinksSupabase();

@@ -66,7 +66,7 @@
             }
         })();
     </script>
-    <script src="js/auth-unified.js?v=2.7" defer></script>
+    <script src="js/auth-unified.js?v=15.0" defer></script>
 </head>
 
 <body>
@@ -220,7 +220,7 @@
                 <i class="fas fa-lock"></i>
             </div>
             <h3 class="auth-title" id="bio-admin-greeting" style="font-size: 1.5rem;">التحقق من الهوية</h3>
-            <p class="auth-subtitle" style="margin-bottom: 24px;">أدخل الرقم السري للعبور أو استخدم البصمة</p>
+            <p class="auth-subtitle" style="margin-bottom: 24px;">أدخل الرقم السري للعبور للمتابعة</p>
             
             <div id="bio-loading-state" class="auth-loading-state hidden">
                 <div class="spinner"></div>
@@ -237,11 +237,8 @@
             
             <div style="display: flex; gap: 10px;">
                 <button class="auth-btn-modern" onclick="verifyPinCode()">
-                    <span>دخول</span>
+                    <span>تأكيد الدخول</span>
                     <i class="fas fa-arrow-left"></i>
-                </button>
-                <button class="auth-btn-modern" style="background: var(--glass-bg); color: var(--text-primary);" onclick="requestBiometricAccess()" id="bio-unlock-btn" title="استخدام البصمة">
-                    <i class="fas fa-fingerprint"></i>
                 </button>
             </div>
             </div>
@@ -430,7 +427,7 @@
     </style>
 
     <!-- App Entry Module -->
-    <script type="module" src="js/app.js?v=8.0"></script>
+    <script type="module" src="js/app.js?v=15.0"></script>
 </body>
 
 </html>
